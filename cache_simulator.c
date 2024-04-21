@@ -34,7 +34,7 @@ unsigned long int l1_dcache_hits = 0;
 
 unsigned long int l2_misses = 0;
 unsigned long int l2_hits = 0;
-unsigned long int l2_cache_energy = 0;
+unsigned long int l2_energy = 0;
 
 unsigned long int dram_energy = 0;
 
@@ -77,12 +77,31 @@ int main(int argc, char *argv[]) {
     char operation;
     unsigned long int address, value;
 
+    printf("Running simulation ...\n(Not doing anything right now)\n");
     while (fscanf(file, "%c %lx %lx\n", &operation, &address, &value) == 3) {
         // TODO execute corresponding operation
-        printf("Operation: %c, Address: 0x%lx, Value: 0x%lx\n", operation, address, value);
+        //printf("Operation: %c, Address: 0x%lx, Value: 0x%lx\n", operation, address, value);
     }
 
     fclose(file);
+
+    printf("Simulation Complete.\n");
+
+    // stats
+    printf("\n\nStatistics: \n");
+
+    printf("Misses:\n");
+    printf("L1 icache: %lu, L1 dcache: %lu, L2: %lu\n\n", l1_icache_misses, l1_dcache_misses, 
+        l2_misses);
+
+    printf("Hits:\n");
+    printf("L1 icache: %lu, L1 dcache: %lu, L2: %lu\n\n", l1_icache_hits, l1_dcache_hits, 
+        l2_hits);
+
+    printf("Energy Consumption:\n");
+    printf("L1: %lu, L2: %lu, DRAM: %lu\n\n", l1_energy, l2_energy, dram_energy);
+
+    printf("Total energy access time: %lu\n", total_mem_acces_time);
 
     // Process memory accesses (assuming address is read from command line arguments)
     // unsigned long int address = strtol(argv[1], NULL, 16);
@@ -93,6 +112,8 @@ int main(int argc, char *argv[]) {
     // printf("L1 Instruction Cache Misses: %lu\n", l1_instruction_cache_misses);
     // printf("L1 Data Cache Misses: %lu\n", l1_data_cache_misses);
     // printf("L2 Cache Misses: %lu\n", l2_cache_misses);
+
+    
 
     printf("**** ");
 
