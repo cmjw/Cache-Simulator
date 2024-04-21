@@ -20,7 +20,7 @@ typedef struct {
     int valid;
     int dirty;
     int tag;
-    int data[BLOCK_SIZE / sizeof(int)]; // int is 4 bytes
+    int unsigned long data[BLOCK_SIZE / sizeof(int)]; // int is 4 bytes
 } CacheBlock;
 
 // cache data
@@ -48,10 +48,10 @@ unsigned long int total_mem_acces_time = 0;
 void print_title();
 void init_caches();
 void process_trace_file(const char* filename);
-int* read_l1_icache(unsigned long int address);
-int* read_l1_dcache(unsigned long int address);
-int* read_l2_cache(unsigned long int address);
-void access_dram(unsigned long int address);
+unsigned long int* read_l1_icache(unsigned long int address);
+unsigned long int* read_l1_dcache(unsigned long int address);
+unsigned long int* read_l2_cache(unsigned long int address);
+unsigned long int* access_dram(unsigned long int address);
 
 
 /**************************************
@@ -176,7 +176,7 @@ void init_caches() {
 /**
  * Read L1 Instruction Cache
 */
-int* read_l1_icache(unsigned long int address) {
+unsigned long int* read_l1_icache(unsigned long int address) {
     if (DEBUG) {
         printf("Addy: %lx\n", address);
     }
@@ -188,7 +188,6 @@ int* read_l1_icache(unsigned long int address) {
     // Cache hit
     if (l1_instruction_cache[index].valid && l1_instruction_cache[index].tag == tag) {
         l1_icache_hits++;
-
         return l1_instruction_cache[index].data;
     }
 
@@ -196,7 +195,7 @@ int* read_l1_icache(unsigned long int address) {
     l1_icache_misses++;
 
     // Cache miss, access L2 cache to fetch data
-    int* data = read_l2_cache(address);
+    unsigned long int* data = read_l2_cache(address);
 
     // Update L1 instruction cache with fetched data
     l1_instruction_cache[index].valid = 1;
@@ -219,7 +218,7 @@ void write_l1_icache(unsigned long int address) {
 /**
  * Read L1 Data Cache
 */
-int* read_l1_dcache(unsigned long int address) {
+unsigned long int* read_l1_dcache(unsigned long int address) {
     if (DEBUG) {
         printf("Addy: %lx\n", address);
     }
@@ -229,21 +228,48 @@ int* read_l1_dcache(unsigned long int address) {
 /**
  * Read L2 Cache
 */
-int* read_l2_cache(unsigned long int address) {
+unsigned long int* read_l2_cache(unsigned long int address) {
     if (DEBUG) {
         printf("Addy: %lx\n", address);
     }
-    return 0;
+    
+    // Calculate set index and tag from the address
+    size_t setIndex = (address / BLOCK_SIZE) % NUM_SETS;
+    int tag = address / (BLOCK_SIZE * NUM_SETS);
+
+    // find block in the set
+    for (int i = 0; i < L2_ASSOCIATIVITY; i++) {
+        if (l2_cache[setIndex][i].valid && l2_cache[setIndex][i].tag == tag) {
+            // Cache hit
+            return l2_cache[setIndex][i].data; 
+        }
+    }
+
+    // Simulate data fetching from memory
+    unsigned long int* data = access_dram(address);
+    // data is null because DRAM doesn't exist ...
+
+    // Random replacement policy
+    int replacementIndex = rand() % L2_ASSOCIATIVITY;
+
+    // Update block with fetched data
+    l2_cache[setIndex][replacementIndex].valid = 1;
+    l2_cache[setIndex][replacementIndex].tag = tag;
+    memcpy(l2_cache[setIndex][replacementIndex].data, data, BLOCK_SIZE);
+
+    // will be null!!
+    return l2_cache[setIndex][replacementIndex].data;
 }
 
 /**
  * Access DRAM
  * Simulate only time and energy
 */
-void access_dram(unsigned long int address) {
+unsigned long int* access_dram(unsigned long int address) {
     if (DEBUG) {
         printf("Addy: %lx\n", address);
     }
+    return NULL;
 }
 
 /**
