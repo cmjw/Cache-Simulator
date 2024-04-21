@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #define L1_INSTRUCTION_CACHE_SIZE 32768  // 32KB
@@ -11,6 +12,9 @@
 #define L2_NUM_BLOCKS (L2_CACHE_SIZE / BLOCK_SIZE)
 #define L2_ASSOCIATIVITY 4
 #define NUM_SETS (L2_NUM_BLOCKS / L2_ASSOCIATIVITY)
+
+// debug mode
+#define DEBUG 1
 
 typedef struct {
     int valid;
@@ -41,11 +45,12 @@ unsigned long int dram_energy = 0;
 unsigned long int total_mem_acces_time = 0;
 
 // function decls
+void print_title();
 void init_caches();
 void process_trace_file(const char* filename);
-void read_l1_icache(unsigned long int address);
-void read_l1_dcache(unsigned long int address);
-void read_l2_cache(unsigned long int address);
+int* read_l1_icache(unsigned long int address);
+int* read_l1_dcache(unsigned long int address);
+int* read_l2_cache(unsigned long int address);
 void access_dram(unsigned long int address);
 
 
@@ -53,18 +58,18 @@ void access_dram(unsigned long int address);
  * Main entry point
 ***************************************/
 int main(int argc, char *argv[]) {
-    // Initialize caches
-    init_caches();
-
-    printf("***** Cache simulator *****\n");
-
     if (argc != 2) {
         fprintf(stderr, "Usage: %s <trace_file.din>\n", argv[0]);
         return 1;
     }
 
+    print_title();
+
+    // Initialize caches
+    init_caches();
+
     // print args
-    printf("File: %s\n", argv[1]);
+    printf("File: %s\n\n", argv[1]);
 
     // Process trace file
     FILE* file = fopen(argv[1], "r");
@@ -82,10 +87,9 @@ int main(int argc, char *argv[]) {
         // TODO execute corresponding operation
         //printf("Operation: %c, Address: 0x%lx, Value: 0x%lx\n", operation, address, value);
     }
-
     fclose(file);
 
-    printf("Simulation Complete.\n");
+    printf("Simulation Complete.\n\n");
 
     // stats
     printf("\n\nStatistics: \n");
@@ -115,11 +119,25 @@ int main(int argc, char *argv[]) {
 
     
 
-    printf("**** ");
+    printf("==========================\n");
 
     return 0;
 }
 
+void print_title() {
+    printf("_________               .__               _________.__              .__          __                \n");
+    printf("\\_   ___ \\_____    ____ |  |__   ____    /   _____/|__| _____  __ __|  | _____ _/  |_  ___________ \n");
+    printf("/    \\  \\/\\__  \\ _/ ___\\|  |  \\_/ __ \\   \\_____  \\ |  |/     \\|  |  \\  | \\__  \\   __\\/  _ \\_  __ \n");
+    printf("\\     \\____/ __ \\\\  \\___|   Y  \\  ___/   /        \\|  |  Y Y  \\  |  /  |__/ __ \\|  | (  <_> )  | \\/\n");
+    printf(" \\______  (____  /\\___  >___|  /\\___  > /_______  /|__|__|_|  /____/|____(____  /__|  \\____/|__|  \n");
+    printf("        \\/     \\/     \\/     \\/     \\/          \\/          \\/                \\/                   \n");
+    printf("_________   _________ _________________  ______ \n");
+    printf("\\_   ___ \\ /   _____/ \\_____  \\______  \\/  __  \\ \n");
+    printf("/    \\  \\/ \\_____  \\    _(__  <   /    />      < \n");
+    printf("\\     \\____/        \\  /       \\ /    //   --   \\\n");
+    printf(" \\______  /_______  / /______  //____/ \\______  / \n");
+    printf("        \\/        \\/         \\/               \\/  \n\n");
+}
 
 /**
  * Initialize all caches
@@ -158,22 +176,64 @@ void init_caches() {
 /**
  * Read L1 Instruction Cache
 */
-void read_l1_icache(unsigned long int address) {
+int* read_l1_icache(unsigned long int address) {
+    if (DEBUG) {
+        printf("Addy: %lx\n", address);
+    }
+    
+    // Calculate cache index and tag from the address
+    size_t index = (address / BLOCK_SIZE) % L1_INSTRUCTION_NUM_BLOCKS;
+    int tag = address / (BLOCK_SIZE * L1_INSTRUCTION_NUM_BLOCKS);
 
+    // Cache hit
+    if (l1_instruction_cache[index].valid && l1_instruction_cache[index].tag == tag) {
+        l1_icache_hits++;
+
+        return l1_instruction_cache[index].data;
+    }
+
+    // cache miss
+    l1_icache_misses++;
+
+    // Cache miss, access L2 cache to fetch data
+    int* data = read_l2_cache(address);
+
+    // Update L1 instruction cache with fetched data
+    l1_instruction_cache[index].valid = 1;
+    l1_instruction_cache[index].tag = tag;
+    memcpy(l1_instruction_cache[index].data, data, BLOCK_SIZE);
+
+    // Return the fetched data
+    return data;
+}
+
+/**
+ * Write L1 Instruction Cache
+*/
+void write_l1_icache(unsigned long int address) {
+    if (DEBUG) {
+        printf("Addy: %lx\n", address);
+    }
 }
 
 /**
  * Read L1 Data Cache
 */
-void read_l1_dcache(unsigned long int address) {
-
+int* read_l1_dcache(unsigned long int address) {
+    if (DEBUG) {
+        printf("Addy: %lx\n", address);
+    }
+    return 0;
 }
 
 /**
  * Read L2 Cache
 */
-void read_l2_cache(unsigned long int address) {
-
+int* read_l2_cache(unsigned long int address) {
+    if (DEBUG) {
+        printf("Addy: %lx\n", address);
+    }
+    return 0;
 }
 
 /**
@@ -181,7 +241,9 @@ void read_l2_cache(unsigned long int address) {
  * Simulate only time and energy
 */
 void access_dram(unsigned long int address) {
-
+    if (DEBUG) {
+        printf("Addy: %lx\n", address);
+    }
 }
 
 /**
