@@ -123,7 +123,7 @@ void print_stats() {
     printf("Energy Consumption:\n");
     printf("L1: %f, L2: %f, DRAM: %f\n\n", l1_energy, l2_energy, dram_energy);
 
-    printf("Total energy access time: %lu\n", total_mem_acces_time);
+    printf("Total memory access time: %f\n", clock_nsec);
 }
 
 /**
@@ -298,6 +298,8 @@ unsigned long int* read_l1_dcache(unsigned long int address) {
 
     l1_active_energy();
 
+    clock_nsec += 0.5;
+
     // TODO
 
     return 0;
@@ -307,9 +309,7 @@ unsigned long int* read_l1_dcache(unsigned long int address) {
  * Read L2 Cache
 */
 unsigned long int* read_l2_cache(unsigned long int address) {
-    if (DEBUG) {
-        printf("Addy: %lx\n", address);
-    }
+    //printf("Addy: %lx\n", address);
 
     l2_active_energy();
     
