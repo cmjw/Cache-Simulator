@@ -1,34 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-
-#define L1_INSTRUCTION_CACHE_SIZE 32768  // 32KB
-#define L1_DATA_CACHE_SIZE 32768         // 32KB
-#define L2_CACHE_SIZE 262144             // 256KB
-#define BLOCK_SIZE 64                    // cache block size of 64 bytes
-#define L1_INSTRUCTION_NUM_BLOCKS (L1_INSTRUCTION_CACHE_SIZE / BLOCK_SIZE)
-#define L1_DATA_NUM_BLOCKS (L1_DATA_CACHE_SIZE / BLOCK_SIZE)
-#define L2_NUM_BLOCKS (L2_CACHE_SIZE / BLOCK_SIZE)
-#define L2_ASSOCIATIVITY 4
-#define NUM_SETS (L2_NUM_BLOCKS / L2_ASSOCIATIVITY)
-
-// debug mode
-#define DEBUG 0
-
-// opcodes
-#define MEMORY_READ  0
-#define MEMORY_WRITE 1
-#define INSTR_FETCH  2
-#define IGNORE       3
-#define FLUSH_CACHE  4
-
-typedef struct {
-    int valid;
-    int dirty;
-    int tag;
-    int unsigned long data[BLOCK_SIZE / sizeof(int)]; // int is 4 bytes
-} CacheBlock;
+#include "./cache_simulator.h"
 
 // cache data
 CacheBlock l1_instruction_cache [L1_INSTRUCTION_NUM_BLOCKS];
@@ -50,6 +20,9 @@ double dram_energy = 0;
 
 unsigned long int total_mem_acces_time = 0;
 
+// clock
+double clock_nsec = 0;
+
 // function decls
 void print_title();
 void print_stats();
@@ -57,21 +30,28 @@ void init_caches();
 void process_trace_file(const char* filename);
 void process_dinero_trace(const char* filename);
 
+// simulated accesses
 unsigned long int* read_l1_icache(unsigned long int address);
 unsigned long int* read_l1_dcache(unsigned long int address);
 unsigned long int* read_l2_cache(unsigned long int address);
 void write_l1_icache(unsigned long int address, unsigned long int* data);
+void write_l2_icache(unsigned long int address, unsigned long int* data);
 unsigned long int* access_dram(unsigned long int address);
 
+// op codes
 void do_memory_read(unsigned long int address);
 void do_memory_write(unsigned long int address, unsigned long int* data);
 void do_instruction_fetch(unsigned long int address, unsigned long int value);
 void do_ignore();
 void do_cache_flush();
 
+// energy sim
 void l1_idle();
 void l2_idle();
 void dram_idle();
+void l1_active();
+void l2_active();
+void dram_active();
 
 
 /**************************************
@@ -89,6 +69,7 @@ int main(int argc, char *argv[]) {
 
     // Initialize caches
     init_caches();
+    clock_nsec = 0.0;
 
     // print args
     printf("File: %s\n\n", argv[1]);
@@ -188,7 +169,6 @@ void process_dinero_trace(const char* filename) {
         else if (opcode == FLUSH_CACHE && address == 0) {
             void do_cache_flush();
         }
-
         else {
             printf("Operation: %c, Address: 0x%lx, Value: 0x%lx\n", operation, address, value);
             fprintf(stderr, "Error: Invalid operation code or arguments.\n");
@@ -253,8 +233,6 @@ void do_memory_write(unsigned long int address, unsigned long int* data) {
 void do_instruction_fetch(unsigned long int address, unsigned long int value) {
     read_l1_icache(address);
     if (0) { printf("%lu", value); }
-
-
 }
 
 /**
@@ -318,6 +296,7 @@ void write_l1_icache(unsigned long int address, unsigned long int* data) {
         printf("Addy: %lx\n", address);
     }
 
+    // 
     l1_energy += 1;
 
     // Calculate cache index and tag from the address
@@ -415,6 +394,27 @@ void l2_idle() {
 */
 void dram_idle() {
     dram_energy += 0.8;
+}
+
+/**
+ * Simulate energy consumption of L1 cache
+*/
+void l1_active() {
+
+}
+
+/**
+ * Simulate energy consumption of L2 cache
+*/
+void l2_active() {
+
+}
+
+/** 
+ * Simulate energy consumption of DRAM
+*/
+void dram_active() {
+
 }
 
 /**
