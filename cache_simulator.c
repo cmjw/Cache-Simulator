@@ -80,12 +80,46 @@ int main(int argc, char *argv[]) {
 
     // TODO fix Dinero 3 input file processing
     char operation;
+    int opcode;
     unsigned long int address, value;
 
     printf("Running simulation ...\n(Not doing anything right now)\n");
     while (fscanf(file, "%c %lx %lx\n", &operation, &address, &value) == 3) {
         // TODO execute corresponding operation
         //printf("Operation: %c, Address: 0x%lx, Value: 0x%lx\n", operation, address, value);
+        opcode = operation - '0';
+
+        // memory read
+        if (opcode == 0 && value == 0) {
+            read_l1_dcache(address);
+        }
+
+        // memory write
+        else if (opcode == 1 && value == 0) {
+            // what do we write to??
+            // just acces DRAM for time?
+        }
+
+        // instruction fetch
+        else if (opcode == 2) {
+
+        }
+
+        // ignore
+        else if (opcode == 3 && address == 0) {
+
+        }
+
+        // flush cache
+        else if (opcode == 4 && address == 0) {
+
+        }
+
+        else {
+            printf("Operation: %c, Address: 0x%lx, Value: 0x%lx\n", operation, address, value);
+            fprintf(stderr, "Error: Invalid operation code or arguments.\n");
+            exit(1);
+        }
     }
     fclose(file);
 
