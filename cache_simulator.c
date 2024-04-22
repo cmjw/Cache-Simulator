@@ -55,6 +55,8 @@ void print_title();
 void print_stats();
 void init_caches();
 void process_trace_file(const char* filename);
+void process_dinero_trace(const char* filename);
+
 unsigned long int* read_l1_icache(unsigned long int address);
 unsigned long int* read_l1_dcache(unsigned long int address);
 unsigned long int* read_l2_cache(unsigned long int address);
@@ -66,7 +68,6 @@ void do_memory_write(unsigned long int address, unsigned long int* data);
 void do_instruction_fetch(unsigned long int address, unsigned long int value);
 void do_ignore();
 void do_cache_flush();
-void process_dinero_trace(const char* filename);
 
 
 /**************************************
@@ -81,7 +82,7 @@ int main(int argc, char *argv[]) {
     if (argc == 2) {
         print_title();
     }
-    
+
     // Initialize caches
     init_caches();
 
