@@ -14,7 +14,7 @@
 #define NUM_SETS (L2_NUM_BLOCKS / L2_ASSOCIATIVITY)
 
 // debug mode
-#define DEBUG 1
+#define DEBUG 0
 
 // opcodes
 #define MEMORY_READ  0
@@ -53,6 +53,7 @@ unsigned long int total_mem_acces_time = 0;
 
 // function decls
 void print_title();
+void print_stats();
 void init_caches();
 void process_trace_file(const char* filename);
 unsigned long int* read_l1_icache(unsigned long int address);
@@ -61,7 +62,7 @@ unsigned long int* read_l2_cache(unsigned long int address);
 unsigned long int* access_dram(unsigned long int address);
 
 void do_memory_read(unsigned long int address);
-void do_memory_write(unsigned long int address);
+void do_memory_write(unsigned long int address, unsigned long int data);
 void do_instruction_fetch(unsigned long int address, unsigned long int value);
 void do_ignore();
 void do_cache_flush();
@@ -96,7 +97,7 @@ int main(int argc, char *argv[]) {
     int opcode;
     unsigned long int address, value;
 
-    printf("Running simulation ...\n(Not doing anything right now)\n");
+    printf("Running simulation ...\n(Not complete right now)\n\n");
     while (fscanf(file, "%c %lx %lx\n", &operation, &address, &value) == 3) {
         // TODO execute corresponding operation
         //printf("Operation: %c, Address: 0x%lx, Value: 0x%lx\n", operation, address, value);
@@ -104,13 +105,13 @@ int main(int argc, char *argv[]) {
 
         // memory read
         if (opcode == MEMORY_READ && value == 0) {
-            do_memory_read();
+            do_memory_read(address);
         }
         // memory write
         else if (opcode == MEMORY_WRITE && value == 0) {
             // what do we write to??
             // just acces DRAM for time?
-            void do_memory_write(unsigned long int address);
+            do_memory_write(address, value);
         }
         // instruction fetch
         else if (opcode == INSTR_FETCH) {
@@ -149,7 +150,7 @@ int main(int argc, char *argv[]) {
 void print_title() {
     printf("_________               .__               _________.__              .__          __                \n");
     printf("\\_   ___ \\_____    ____ |  |__   ____    /   _____/|__| _____  __ __|  | _____ _/  |_  ___________ \n");
-    printf("/    \\  \\/\\__  \\ _/ ___\\|  |  \\_/ __ \\   \\_____  \\ |  |/     \\|  |  \\  | \\__  \\   __\\/  _ \\_  __ \n");
+    printf("/    \\  \\/\\__  \\ _/ ___\\|  |  \\_/ __ \\   \\_____  \\ |  |/     \\|  |  \\  | \\__  \\   __\\/  _  \\_  __ \n");
     printf("\\     \\____/ __ \\\\  \\___|   Y  \\  ___/   /        \\|  |  Y Y  \\  |  /  |__/ __ \\|  | (  <_> )  | \\/\n");
     printf(" \\______  (____  /\\___  >___|  /\\___  > /_______  /|__|__|_|  /____/|____(____  /__|  \\____/|__|  \n");
     printf("        \\/     \\/     \\/     \\/     \\/          \\/          \\/                \\/                   \n");
@@ -220,6 +221,45 @@ void init_caches() {
 */
 void do_memory_read(unsigned long int address) {
     read_l1_dcache(address);
+}
+
+/**
+ * Do a memory write.
+*/
+void do_memory_write(unsigned long int address, unsigned long int data) {
+    // idk yet
+    size_t index = (address / BLOCK_SIZE) % L1_DATA_NUM_BLOCKS;
+    //int tag = address / (BLOCK_SIZE * L1_DATA_NUM_BLOCKS);
+
+    memcpy(l1_data_cache[index].data, &data, BLOCK_SIZE);
+
+    l1_data_cache[index].dirty = 1;
+}
+
+/**
+ * Do an instruction fetch.
+*/
+void do_instruction_fetch(unsigned long int address, unsigned long int value) {
+    read_l1_icache(address);
+    if (0) { printf("%lu", value); }
+}
+
+/**
+ * Do an ignore.
+*/
+void do_ignore() {
+    // idle energy consumption
+    l1_energy += 0.5;
+    l2_energy += 0.8;
+    dram_energy += 0.8;
+}
+
+/**
+ * Do a cache flush.
+*/
+void do_cache_flush() {
+    init_caches();
+    do_ignore();
 }
 
 /**
