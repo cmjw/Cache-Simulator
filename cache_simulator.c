@@ -3,7 +3,9 @@
 // cache data
 CacheBlock l1_instruction_cache [L1_INSTRUCTION_NUM_BLOCKS];
 CacheBlock l1_data_cache        [L1_DATA_NUM_BLOCKS];
-CacheBlock l2_cache             [NUM_SETS][L2_ASSOCIATIVITY];
+CacheBlock l2_cache             [NUM_SETS][DEFAULT_ASSOCIATIVITY];
+
+unsigned long int SET_ASSOCIATIVITY = -1;
 
 // stats
 unsigned long int l1_icache_misses = 0;
@@ -60,7 +62,7 @@ void dram_active_energy();
 ***************************************/
 int main(int argc, char *argv[]) {
     if (argc < 2) {
-        fprintf(stderr, "Usage: %s <trace_file.din>\n", argv[0]);
+        fprintf(stderr, "Usage: %s <trace_file.din> <-n> <-a> <associativity>\n", argv[0]);
         return 1;
     }
 
@@ -69,6 +71,18 @@ int main(int argc, char *argv[]) {
     }
 
     // Initialize caches
+    SET_ASSOCIATIVITY = DEFAULT_ASSOCIATIVITY;
+
+    // set associativity
+    if (argc > 3) {
+        int associativity = atoi(argv[4]);
+        if (associativity % 2 != 0) {
+            fprintf(stderr, "Invalid associativity\n");
+            exit(1);
+        }
+        SET_ASSOCIATIVITY = associativity;
+    }
+
     init_caches();
     clock_nsec = 0.0;
 
@@ -201,7 +215,7 @@ void init_caches() {
     }
 
     for (size_t i = 0; i < NUM_SETS; i++) {
-        for (size_t j = 0; j < L2_ASSOCIATIVITY; j++) {
+        for (size_t j = 0; j < SET_ASSOCIATIVITY; j++) {
             l2_cache[i][j].valid = 0;
             l2_cache[i][j].dirty = 0;
             l2_cache[i][j].tag = -1;
@@ -319,14 +333,14 @@ unsigned long int* read_l1_dcache(unsigned long int address) {
     // seg fault
     long unsigned int* data = read_l2_cache(address);
 
-    // // Update L1 data cache with fetched data
-    // l1_data_cache[index].valid = 1;
-    // l1_data_cache[index].tag = tag;
-    // l1_data_cache[index].dirty = 0; // Assuming no write-back policy for simplicity
-    // memcpy(l1_data_cache[index].data, data, BLOCK_SIZE);
+    // Update L1 data cache with fetched data
+    l1_data_cache[index].valid = 1;
+    l1_data_cache[index].tag = tag;
+    l1_data_cache[index].dirty = 0; // Assuming no write-back policy for simplicity
+    memcpy(l1_data_cache[index].data, data, BLOCK_SIZE);
 
     // // Return pointer to the data
-    // return l1_data_cache[index].data;
+    return l1_data_cache[index].data;
 
     return 0;
 }
@@ -346,7 +360,7 @@ unsigned long int* read_l2_cache(unsigned long int address) {
     int tag = address / (BLOCK_SIZE * NUM_SETS);
 
     // find block in the set
-    for (int i = 0; i < L2_ASSOCIATIVITY; i++) {
+    for (size_t i = 0; i < SET_ASSOCIATIVITY; i++) {
         if (l2_cache[setIndex][i].valid && l2_cache[setIndex][i].tag == tag) {
             // Cache hit
             return l2_cache[setIndex][i].data; 
@@ -360,7 +374,7 @@ unsigned long int* read_l2_cache(unsigned long int address) {
     // data is null because DRAM doesn't exist ...
 
     // Random replacement policy
-    int replacementIndex = rand() % L2_ASSOCIATIVITY;
+    int replacementIndex = rand() % SET_ASSOCIATIVITY;
 
     // Update block with fetched data
     l2_cache[setIndex][replacementIndex].valid = 1;
@@ -391,7 +405,7 @@ unsigned long int* access_dram(unsigned long int address) {
     }
 
     srand(time(NULL)); 
-    for (int i = 0; i < BLOCK_SIZE / sizeof(int); i++) {
+    for (size_t i = 0; i < BLOCK_SIZE / sizeof(int); i++) {
         dummy_data[i] = rand(); // Generate a random integer
     }
 
@@ -453,7 +467,7 @@ void write_l2_cache(unsigned long int address, unsigned long int* data) {
     int tag = address / (BLOCK_SIZE * NUM_SETS);
 
     // Check if block is already present
-    for (int i = 0; i < L2_ASSOCIATIVITY; i++) {
+    for (size_t i = 0; i < SET_ASSOCIATIVITY; i++) {
         if (l2_cache[setIndex][i].valid && l2_cache[setIndex][i].tag == tag) {
             // cache hit
             memcpy(l2_cache[setIndex][i].data, data, BLOCK_SIZE);
@@ -463,7 +477,7 @@ void write_l2_cache(unsigned long int address, unsigned long int* data) {
     }
 
     // cache miss
-    int replacementIndex = rand() % L2_ASSOCIATIVITY;
+    int replacementIndex = rand() % SET_ASSOCIATIVITY;
 
     // Update the cache block
     l2_cache[setIndex][replacementIndex].valid = 1;
