@@ -10,8 +10,10 @@ $ make
 $ ./cache_simulator <trace>
 
 To run with minimal output other than stats:
-$ make
-$ ./cache_simulator <trace> -m
+$ ./cache_simulator <trace> -n
+
+To set associativity:
+$ ./cache_simulator <trace> -n -a <associativity>
 
 Input:
 Trace file in .din Dinero 3 format.
