@@ -46,12 +46,12 @@ void do_ignore();
 void do_cache_flush();
 
 // energy sim
-void l1_idle();
-void l2_idle();
-void dram_idle();
-void l1_active();
-void l2_active();
-void dram_active();
+void l1_idle_energy();
+void l2_idle_energy();
+void dram_idle_energy();
+void l1_active_energy();
+void l2_active_energy();
+void dram_active_energy();
 
 
 /**************************************
@@ -136,15 +136,13 @@ void process_dinero_trace(const char* filename) {
         exit(1);
     }
 
-    // TODO fix Dinero 3 input file processing
     char operation;
     int opcode;
     unsigned long int address, value;
 
     printf("Running simulation ...\n(Not complete right now)\n\n");
+
     while (fscanf(file, "%c %lx %lx\n", &operation, &address, &value) == 3) {
-        // TODO execute corresponding operation
-        //printf("Operation: %c, Address: 0x%lx, Value: 0x%lx\n", operation, address, value);
         opcode = operation - '0';
 
         // memory read
@@ -182,6 +180,7 @@ void process_dinero_trace(const char* filename) {
  * Initialize all caches
 */
 void init_caches() {
+    // L1 icache
     for (size_t i = 0; i < L1_INSTRUCTION_NUM_BLOCKS; i++) {
         l1_instruction_cache[i].valid = 0;
         l1_instruction_cache[i].dirty = 0;
@@ -240,9 +239,9 @@ void do_instruction_fetch(unsigned long int address, unsigned long int value) {
 */
 void do_ignore() {
     // idle energy consumption
-    l1_idle();
-    l2_idle();
-    dram_idle();
+    l1_idle_energy();
+    l2_idle_energy();
+    dram_idle_energy();
 }
 
 /**
@@ -250,7 +249,7 @@ void do_ignore() {
 */
 void do_cache_flush() {
     init_caches();
-    do_ignore();
+    do_ignore(); // ??
 }
 
 /**
@@ -261,7 +260,7 @@ unsigned long int* read_l1_icache(unsigned long int address) {
         printf("Addy: %lx\n", address);
     }
     
-    l1_energy += 1;
+    l1_active_energy();
 
     // Calculate cache index and tag from the address
     size_t index = (address / BLOCK_SIZE) % L1_INSTRUCTION_NUM_BLOCKS;
@@ -296,8 +295,7 @@ void write_l1_icache(unsigned long int address, unsigned long int* data) {
         printf("Addy: %lx\n", address);
     }
 
-    // 
-    l1_energy += 1;
+    l1_active_energy();
 
     // Calculate cache index and tag from the address
     size_t index = (address / BLOCK_SIZE) % L1_DATA_NUM_BLOCKS;
@@ -318,7 +316,9 @@ unsigned long int* read_l1_dcache(unsigned long int address) {
         printf("Addy: %lx\n", address);
     }
 
-    l1_energy += 1;
+    l1_active_energy();
+
+    // TODO
 
     return 0;
 }
@@ -331,7 +331,7 @@ unsigned long int* read_l2_cache(unsigned long int address) {
         printf("Addy: %lx\n", address);
     }
 
-    l2_energy += 2;
+    l2_active_energy();
     
     // Calculate set index and tag from the address
     size_t setIndex = (address / BLOCK_SIZE) % NUM_SETS;
@@ -344,6 +344,8 @@ unsigned long int* read_l2_cache(unsigned long int address) {
             return l2_cache[setIndex][i].data; 
         }
     }
+
+    // cache miss
 
     // Simulate data fetching from memory
     unsigned long int* data = access_dram(address);
@@ -370,51 +372,52 @@ unsigned long int* access_dram(unsigned long int address) {
         printf("Addy: %lx\n", address);
     }
 
-    dram_energy += 4;
+    dram_active_energy();
 
+    // ????
     return NULL;
 }
 
 /**
  * Simulate idle L1 cache
 */
-void l1_idle() {
-    l1_energy += 0.5;
+void l1_idle_energy() {
+    l1_energy += L1_IDLE_ENERGY;
 }
 
 /**
  * Simulate idle L2 cache
 */
-void l2_idle() {
-    l2_energy += 0.8;
+void l2_idle_energy() {
+    l2_energy += L2_IDLE_ENERGY;
 }
 
 /**
  * Simulate idle DRAM
 */
-void dram_idle() {
-    dram_energy += 0.8;
+void dram_idle_energy() {
+    dram_energy += DRAM_IDLE_ENERGY;
 }
 
 /**
  * Simulate energy consumption of L1 cache
 */
-void l1_active() {
-
+void l1_active_energy() {
+    l1_energy += L1_RW_ENERGY;
 }
 
 /**
  * Simulate energy consumption of L2 cache
 */
-void l2_active() {
-
+void l2_active_energy() {
+    l2_energy += L2_RW_ENERGY;
 }
 
 /** 
  * Simulate energy consumption of DRAM
 */
-void dram_active() {
-
+void dram_active_energy() {
+    dram_energy += DRAM_RW_ENERGY;
 }
 
 /**
