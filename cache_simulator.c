@@ -23,7 +23,7 @@ double dram_energy = 0;
 unsigned long int total_mem_acces_time = 0;
 
 // clock
-double clock_nsec = 0;
+double simulation_clock = 0;
 
 // function decls
 void print_title();
@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
     }
 
     init_caches();
-    clock_nsec = 0.0;
+    simulation_clock = 0.0;
 
     // print args
     printf("File: %s\n\n", argv[1]);
@@ -137,7 +137,7 @@ void print_stats() {
     printf("Energy Consumption:\n");
     printf("L1: %f, L2: %f, DRAM: %f\n\n", l1_energy, l2_energy, dram_energy);
 
-    printf("Total memory access time: %f\n", clock_nsec);
+    printf("Total memory access time: %f\n", simulation_clock);
 }
 
 /**
@@ -316,7 +316,7 @@ unsigned long int* read_l1_dcache(unsigned long int address) {
     l2_idle_energy();
     dram_idle_energy();
 
-    clock_nsec += 0.5;
+    simulation_clock += L1_ACCESS_TIME;
 
     size_t index = (address / BLOCK_SIZE) % L1_DATA_NUM_BLOCKS;
     int tag = address / (BLOCK_SIZE * L1_DATA_NUM_BLOCKS);
@@ -363,6 +363,7 @@ unsigned long int* read_l2_cache(unsigned long int address) {
     for (size_t i = 0; i < SET_ASSOCIATIVITY; i++) {
         if (l2_cache[setIndex][i].valid && l2_cache[setIndex][i].tag == tag) {
             // Cache hit
+            simulation_clock += L2_ACCESS_TIME;
             return l2_cache[setIndex][i].data; 
         }
     }
@@ -408,6 +409,8 @@ unsigned long int* access_dram(unsigned long int address) {
     for (size_t i = 0; i < BLOCK_SIZE / sizeof(int); i++) {
         dummy_data[i] = rand(); // Generate a random integer
     }
+
+    simulation_clock += DRAM_ACCESS_TIME;
 
     // ????
     return dummy_data;
