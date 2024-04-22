@@ -69,6 +69,10 @@ void do_instruction_fetch(unsigned long int address, unsigned long int value);
 void do_ignore();
 void do_cache_flush();
 
+void l1_idle();
+void l2_idle();
+void dram_idle();
+
 
 /**************************************
  * Main entry point
@@ -249,6 +253,8 @@ void do_memory_write(unsigned long int address, unsigned long int* data) {
 void do_instruction_fetch(unsigned long int address, unsigned long int value) {
     read_l1_icache(address);
     if (0) { printf("%lu", value); }
+
+
 }
 
 /**
@@ -256,9 +262,9 @@ void do_instruction_fetch(unsigned long int address, unsigned long int value) {
 */
 void do_ignore() {
     // idle energy consumption
-    l1_energy += 0.5;
-    l2_energy += 0.8;
-    dram_energy += 0.8;
+    l1_idle();
+    l2_idle();
+    dram_idle();
 }
 
 /**
@@ -388,6 +394,27 @@ unsigned long int* access_dram(unsigned long int address) {
     dram_energy += 4;
 
     return NULL;
+}
+
+/**
+ * Simulate idle L1 cache
+*/
+void l1_idle() {
+    l1_energy += 0.5;
+}
+
+/**
+ * Simulate idle L2 cache
+*/
+void l2_idle() {
+    l2_energy += 0.8;
+}
+
+/**
+ * Simulate idle DRAM
+*/
+void dram_idle() {
+    dram_energy += 0.8;
 }
 
 /**
