@@ -16,6 +16,13 @@
 // debug mode
 #define DEBUG 1
 
+// opcodes
+#define MEMORY_READ  0
+#define MEMORY_WRITE 1
+#define INSTR_FETCH  2
+#define IGNORE       3
+#define FLUSH_CACHE  4
+
 typedef struct {
     int valid;
     int dirty;
@@ -52,6 +59,12 @@ unsigned long int* read_l1_icache(unsigned long int address);
 unsigned long int* read_l1_dcache(unsigned long int address);
 unsigned long int* read_l2_cache(unsigned long int address);
 unsigned long int* access_dram(unsigned long int address);
+
+void do_memory_read(unsigned long int address);
+void do_memory_write(unsigned long int address);
+void do_instruction_fetch(unsigned long int address, unsigned long int value);
+void do_ignore();
+void do_cache_flush();
 
 
 /**************************************
@@ -90,29 +103,26 @@ int main(int argc, char *argv[]) {
         opcode = operation - '0';
 
         // memory read
-        if (opcode == 0 && value == 0) {
-            read_l1_dcache(address);
+        if (opcode == MEMORY_READ && value == 0) {
+            do_memory_read();
         }
-
         // memory write
-        else if (opcode == 1 && value == 0) {
+        else if (opcode == MEMORY_WRITE && value == 0) {
             // what do we write to??
             // just acces DRAM for time?
+            void do_memory_write(unsigned long int address);
         }
-
         // instruction fetch
-        else if (opcode == 2) {
-
+        else if (opcode == INSTR_FETCH) {
+            void do_instruction_fetch(unsigned long int address, unsigned long int value);
         }
-
         // ignore
-        else if (opcode == 3 && address == 0) {
-
+        else if (opcode == IGNORE && address == 0) {
+            void do_ignore();
         }
-
         // flush cache
-        else if (opcode == 4 && address == 0) {
-
+        else if (opcode == FLUSH_CACHE && address == 0) {
+            void do_cache_flush();
         }
 
         else {
@@ -126,6 +136,35 @@ int main(int argc, char *argv[]) {
     printf("Simulation Complete.\n\n");
 
     // stats
+    print_stats();
+
+    printf("==========================\n");
+
+    return 0;
+}
+
+/**
+ * Print a lil title
+*/
+void print_title() {
+    printf("_________               .__               _________.__              .__          __                \n");
+    printf("\\_   ___ \\_____    ____ |  |__   ____    /   _____/|__| _____  __ __|  | _____ _/  |_  ___________ \n");
+    printf("/    \\  \\/\\__  \\ _/ ___\\|  |  \\_/ __ \\   \\_____  \\ |  |/     \\|  |  \\  | \\__  \\   __\\/  _ \\_  __ \n");
+    printf("\\     \\____/ __ \\\\  \\___|   Y  \\  ___/   /        \\|  |  Y Y  \\  |  /  |__/ __ \\|  | (  <_> )  | \\/\n");
+    printf(" \\______  (____  /\\___  >___|  /\\___  > /_______  /|__|__|_|  /____/|____(____  /__|  \\____/|__|  \n");
+    printf("        \\/     \\/     \\/     \\/     \\/          \\/          \\/                \\/                   \n");
+    printf("_________   _________ _________________  ______ \n");
+    printf("\\_   ___ \\ /   _____/ \\_____  \\______  \\/  __  \\ \n");
+    printf("/    \\  \\/ \\_____  \\    _(__  <   /    />      < \n");
+    printf("\\     \\____/        \\  /       \\ /    //   --   \\\n");
+    printf(" \\______  /_______  / /______  //____/ \\______  / \n");
+    printf("        \\/        \\/         \\/               \\/  \n\n");
+}
+
+/**
+ * Print Stats
+*/
+void print_stats() {
     printf("\n\nStatistics: \n");
 
     printf("Misses:\n");
@@ -140,37 +179,6 @@ int main(int argc, char *argv[]) {
     printf("L1: %lu, L2: %lu, DRAM: %lu\n\n", l1_energy, l2_energy, dram_energy);
 
     printf("Total energy access time: %lu\n", total_mem_acces_time);
-
-    // Process memory accesses (assuming address is read from command line arguments)
-    // unsigned long int address = strtol(argv[1], NULL, 16);
-    // access_l1_instruction_cache(address);
-    // access_l1_data_cache(address);
-
-    // Print cache miss statistics
-    // printf("L1 Instruction Cache Misses: %lu\n", l1_instruction_cache_misses);
-    // printf("L1 Data Cache Misses: %lu\n", l1_data_cache_misses);
-    // printf("L2 Cache Misses: %lu\n", l2_cache_misses);
-
-    
-
-    printf("==========================\n");
-
-    return 0;
-}
-
-void print_title() {
-    printf("_________               .__               _________.__              .__          __                \n");
-    printf("\\_   ___ \\_____    ____ |  |__   ____    /   _____/|__| _____  __ __|  | _____ _/  |_  ___________ \n");
-    printf("/    \\  \\/\\__  \\ _/ ___\\|  |  \\_/ __ \\   \\_____  \\ |  |/     \\|  |  \\  | \\__  \\   __\\/  _ \\_  __ \n");
-    printf("\\     \\____/ __ \\\\  \\___|   Y  \\  ___/   /        \\|  |  Y Y  \\  |  /  |__/ __ \\|  | (  <_> )  | \\/\n");
-    printf(" \\______  (____  /\\___  >___|  /\\___  > /_______  /|__|__|_|  /____/|____(____  /__|  \\____/|__|  \n");
-    printf("        \\/     \\/     \\/     \\/     \\/          \\/          \\/                \\/                   \n");
-    printf("_________   _________ _________________  ______ \n");
-    printf("\\_   ___ \\ /   _____/ \\_____  \\______  \\/  __  \\ \n");
-    printf("/    \\  \\/ \\_____  \\    _(__  <   /    />      < \n");
-    printf("\\     \\____/        \\  /       \\ /    //   --   \\\n");
-    printf(" \\______  /_______  / /______  //____/ \\______  / \n");
-    printf("        \\/        \\/         \\/               \\/  \n\n");
 }
 
 /**
@@ -208,6 +216,13 @@ void init_caches() {
 }
 
 /**
+ * Do a memory read.
+*/
+void do_memory_read(unsigned long int address) {
+    read_l1_dcache(address);
+}
+
+/**
  * Read L1 Instruction Cache
 */
 unsigned long int* read_l1_icache(unsigned long int address) {
@@ -215,6 +230,8 @@ unsigned long int* read_l1_icache(unsigned long int address) {
         printf("Addy: %lx\n", address);
     }
     
+    l1_energy += 1;
+
     // Calculate cache index and tag from the address
     size_t index = (address / BLOCK_SIZE) % L1_INSTRUCTION_NUM_BLOCKS;
     int tag = address / (BLOCK_SIZE * L1_INSTRUCTION_NUM_BLOCKS);
@@ -247,6 +264,8 @@ void write_l1_icache(unsigned long int address) {
     if (DEBUG) {
         printf("Addy: %lx\n", address);
     }
+
+    l1_energy += 1;
 }
 
 /**
@@ -256,6 +275,9 @@ unsigned long int* read_l1_dcache(unsigned long int address) {
     if (DEBUG) {
         printf("Addy: %lx\n", address);
     }
+
+    l1_energy += 1;
+
     return 0;
 }
 
@@ -266,6 +288,8 @@ unsigned long int* read_l2_cache(unsigned long int address) {
     if (DEBUG) {
         printf("Addy: %lx\n", address);
     }
+
+    l2_energy += 2;
     
     // Calculate set index and tag from the address
     size_t setIndex = (address / BLOCK_SIZE) % NUM_SETS;
@@ -303,6 +327,9 @@ unsigned long int* access_dram(unsigned long int address) {
     if (DEBUG) {
         printf("Addy: %lx\n", address);
     }
+
+    dram_energy += 4;
+
     return NULL;
 }
 
