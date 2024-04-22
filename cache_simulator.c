@@ -37,17 +37,16 @@ CacheBlock l2_cache             [NUM_SETS][L2_ASSOCIATIVITY];
 
 // stats
 unsigned long int l1_icache_misses = 0;
-unsigned long int l1_icache_hits = 0;
-unsigned long int l1_energy = 0;
-
 unsigned long int l1_dcache_misses = 0;
-unsigned long int l1_dcache_hits = 0;
-
 unsigned long int l2_misses = 0;
-unsigned long int l2_hits = 0;
-unsigned long int l2_energy = 0;
 
-unsigned long int dram_energy = 0;
+unsigned long int l1_icache_hits = 0;
+unsigned long int l1_dcache_hits = 0;
+unsigned long int l2_hits = 0;
+
+double l1_energy = 0;
+double l2_energy = 0;
+double dram_energy = 0;
 
 unsigned long int total_mem_acces_time = 0;
 
@@ -59,10 +58,11 @@ void process_trace_file(const char* filename);
 unsigned long int* read_l1_icache(unsigned long int address);
 unsigned long int* read_l1_dcache(unsigned long int address);
 unsigned long int* read_l2_cache(unsigned long int address);
+void write_l1_icache(unsigned long int address, unsigned long int* data);
 unsigned long int* access_dram(unsigned long int address);
 
 void do_memory_read(unsigned long int address);
-void do_memory_write(unsigned long int address, unsigned long int data);
+void do_memory_write(unsigned long int address, unsigned long int* data);
 void do_instruction_fetch(unsigned long int address, unsigned long int value);
 void do_ignore();
 void do_cache_flush();
@@ -111,7 +111,7 @@ int main(int argc, char *argv[]) {
         else if (opcode == MEMORY_WRITE && value == 0) {
             // what do we write to??
             // just acces DRAM for time?
-            do_memory_write(address, value);
+            do_memory_write(address, &value);
         }
         // instruction fetch
         else if (opcode == INSTR_FETCH) {
@@ -177,7 +177,7 @@ void print_stats() {
         l2_hits);
 
     printf("Energy Consumption:\n");
-    printf("L1: %lu, L2: %lu, DRAM: %lu\n\n", l1_energy, l2_energy, dram_energy);
+    printf("L1: %f, L2: %f, DRAM: %f\n\n", l1_energy, l2_energy, dram_energy);
 
     printf("Total energy access time: %lu\n", total_mem_acces_time);
 }
@@ -226,14 +226,9 @@ void do_memory_read(unsigned long int address) {
 /**
  * Do a memory write.
 */
-void do_memory_write(unsigned long int address, unsigned long int data) {
+void do_memory_write(unsigned long int address, unsigned long int* data) {
     // idk yet
-    size_t index = (address / BLOCK_SIZE) % L1_DATA_NUM_BLOCKS;
-    //int tag = address / (BLOCK_SIZE * L1_DATA_NUM_BLOCKS);
-
-    memcpy(l1_data_cache[index].data, &data, BLOCK_SIZE);
-
-    l1_data_cache[index].dirty = 1;
+    write_l1_icache(address, data);
 }
 
 /**
@@ -300,12 +295,22 @@ unsigned long int* read_l1_icache(unsigned long int address) {
 /**
  * Write L1 Instruction Cache
 */
-void write_l1_icache(unsigned long int address) {
+void write_l1_icache(unsigned long int address, unsigned long int* data) {
     if (DEBUG) {
         printf("Addy: %lx\n", address);
     }
 
     l1_energy += 1;
+
+    // Calculate cache index and tag from the address
+    size_t index = (address / BLOCK_SIZE) % L1_DATA_NUM_BLOCKS;
+    int tag = address / (BLOCK_SIZE * L1_DATA_NUM_BLOCKS);
+
+    l1_data_cache[index].valid = 1;
+    l1_data_cache[index].tag = tag;
+    l1_data_cache[index].dirty = 1;
+
+    memcpy(l1_data_cache[index].data, data, BLOCK_SIZE);
 }
 
 /**
