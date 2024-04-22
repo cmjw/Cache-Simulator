@@ -35,7 +35,8 @@ unsigned long int* read_l1_icache(unsigned long int address);
 unsigned long int* read_l1_dcache(unsigned long int address);
 unsigned long int* read_l2_cache(unsigned long int address);
 void write_l1_icache(unsigned long int address, unsigned long int* data);
-void write_l2_icache(unsigned long int address, unsigned long int* data);
+void write_l1_dcache(unsigned long int address, unsigned long int* data);
+void write_l2_cache(unsigned long int address, unsigned long int* data);
 unsigned long int* access_dram(unsigned long int address);
 
 // op codes
@@ -288,27 +289,6 @@ unsigned long int* read_l1_icache(unsigned long int address) {
 }
 
 /**
- * Write L1 Instruction Cache
-*/
-void write_l1_icache(unsigned long int address, unsigned long int* data) {
-    if (DEBUG) {
-        printf("Addy: %lx\n", address);
-    }
-
-    l1_active_energy();
-
-    // Calculate cache index and tag from the address
-    size_t index = (address / BLOCK_SIZE) % L1_DATA_NUM_BLOCKS;
-    int tag = address / (BLOCK_SIZE * L1_DATA_NUM_BLOCKS);
-
-    l1_data_cache[index].valid = 1;
-    l1_data_cache[index].tag = tag;
-    l1_data_cache[index].dirty = 1;
-
-    memcpy(l1_data_cache[index].data, data, BLOCK_SIZE);
-}
-
-/**
  * Read L1 Data Cache
 */
 unsigned long int* read_l1_dcache(unsigned long int address) {
@@ -376,6 +356,73 @@ unsigned long int* access_dram(unsigned long int address) {
 
     // ????
     return NULL;
+}
+
+/**
+ * Write L1 Instruction Cache
+*/
+void write_l1_icache(unsigned long int address, unsigned long int* data) {
+    if (DEBUG) {
+        printf("Addy: %lx\n", address);
+    }
+
+    l1_active_energy();
+
+    // Calculate cache index and tag from the address
+    size_t index = (address / BLOCK_SIZE) % L1_INSTRUCTION_NUM_BLOCKS;
+    int tag = address / (BLOCK_SIZE * L1_INSTRUCTION_NUM_BLOCKS);
+
+    l1_data_cache[index].valid = 1;
+    l1_data_cache[index].tag = tag;
+    l1_data_cache[index].dirty = 1;
+
+    memcpy(l1_instruction_cache[index].data, data, BLOCK_SIZE);
+}
+
+/**
+ * Write to the L1 data cache
+*/
+void write_l1_dcache(unsigned long int address, unsigned long int* data) {
+    l1_active_energy();
+
+    // Calculate cache index and tag from the address
+    size_t index = (address / BLOCK_SIZE) % L1_DATA_NUM_BLOCKS;
+    int tag = address / (BLOCK_SIZE * L1_DATA_NUM_BLOCKS);
+
+    l1_data_cache[index].valid = 1;
+    l1_data_cache[index].tag = tag;
+    l1_data_cache[index].dirty = 1;
+
+    memcpy(l1_data_cache[index].data, data, BLOCK_SIZE);
+}
+
+/**
+ * Write to the L2 cache
+*/
+void write_l2_cache(unsigned long int address, unsigned long int* data) {
+    l2_active_energy();
+
+    size_t setIndex = (address / BLOCK_SIZE) % NUM_SETS;
+    int tag = address / (BLOCK_SIZE * NUM_SETS);
+
+    // Check if block is already present
+    for (int i = 0; i < L2_ASSOCIATIVITY; i++) {
+        if (l2_cache[setIndex][i].valid && l2_cache[setIndex][i].tag == tag) {
+            // cache hit
+            memcpy(l2_cache[setIndex][i].data, data, BLOCK_SIZE);
+            l2_cache[setIndex][i].dirty = 1; 
+            return;
+        }
+    }
+
+    // cache miss
+    int replacementIndex = rand() % L2_ASSOCIATIVITY;
+
+    // Update the cache block
+    l2_cache[setIndex][replacementIndex].valid = 1;
+    l2_cache[setIndex][replacementIndex].tag = tag;
+    l2_cache[setIndex][replacementIndex].dirty = 1;
+    memcpy(l2_cache[setIndex][replacementIndex].data, data, BLOCK_SIZE);
 }
 
 /**
