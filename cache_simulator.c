@@ -124,7 +124,7 @@ void print_title() {
  * Print Stats
 */
 void print_stats() {
-    printf("\n\nStatistics: \n");
+    printf("\nStatistics: \n");
 
     printf("Misses:\n");
     printf("L1 icache: %lu, L1 dcache: %lu, L2: %lu\n\n", l1_icache_misses, l1_dcache_misses, 
@@ -172,7 +172,7 @@ void process_dinero_trace(const char* filename) {
         }
         // instruction fetch
         else if (opcode == INSTR_FETCH) {
-            void do_instruction_fetch(unsigned long int address, unsigned long int value);
+            do_instruction_fetch(address, &value);
         }
         // ignore
         else if (opcode == IGNORE && address == 0) {
@@ -226,6 +226,11 @@ void init_caches() {
     }
 }
 
+
+/** +++++++++++++++++++++++++++++++++++++++++++
+ * Operation wrapper functions
+*/
+
 /**
  * Do a memory read.
 */
@@ -246,7 +251,6 @@ void do_memory_write(unsigned long int address, unsigned long int* data) {
 */
 void do_instruction_fetch(unsigned long int address, unsigned long int value) {
     read_l1_icache(address);
-    if (0) { printf("%lu", value); }
 }
 
 /**
@@ -261,11 +265,17 @@ void do_ignore() {
 
 /**
  * Do a cache flush.
+ * This won't actually be tested in the trace test cases. 
+ * But just in case.
 */
 void do_cache_flush() {
     init_caches();
     do_ignore(); // ??
 }
+
+/** ++++++++++++++++++++++++
+ * Internal cache operations
+   +++++++++++++++++++++++++  */
 
 /**
  * Read L1 Instruction Cache
