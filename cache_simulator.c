@@ -66,73 +66,30 @@ void do_memory_write(unsigned long int address, unsigned long int* data);
 void do_instruction_fetch(unsigned long int address, unsigned long int value);
 void do_ignore();
 void do_cache_flush();
+void process_dinero_trace(const char* filename);
 
 
 /**************************************
  * Main entry point
 ***************************************/
 int main(int argc, char *argv[]) {
-    if (argc != 2) {
+    if (argc < 2) {
         fprintf(stderr, "Usage: %s <trace_file.din>\n", argv[0]);
         return 1;
     }
 
-    print_title();
-
+    if (argc == 2) {
+        print_title();
+    }
+    
     // Initialize caches
     init_caches();
 
     // print args
     printf("File: %s\n\n", argv[1]);
 
-    // Process trace file
-    FILE* file = fopen(argv[1], "r");
-    if (file == NULL) {
-        fprintf(stderr, "Error: Unable to open trace file. Is it in Dinero 3 .din format?\n");
-        exit(1);
-    }
-
-    // TODO fix Dinero 3 input file processing
-    char operation;
-    int opcode;
-    unsigned long int address, value;
-
-    printf("Running simulation ...\n(Not complete right now)\n\n");
-    while (fscanf(file, "%c %lx %lx\n", &operation, &address, &value) == 3) {
-        // TODO execute corresponding operation
-        //printf("Operation: %c, Address: 0x%lx, Value: 0x%lx\n", operation, address, value);
-        opcode = operation - '0';
-
-        // memory read
-        if (opcode == MEMORY_READ && value == 0) {
-            do_memory_read(address);
-        }
-        // memory write
-        else if (opcode == MEMORY_WRITE && value == 0) {
-            // what do we write to??
-            // just acces DRAM for time?
-            do_memory_write(address, &value);
-        }
-        // instruction fetch
-        else if (opcode == INSTR_FETCH) {
-            void do_instruction_fetch(unsigned long int address, unsigned long int value);
-        }
-        // ignore
-        else if (opcode == IGNORE && address == 0) {
-            void do_ignore();
-        }
-        // flush cache
-        else if (opcode == FLUSH_CACHE && address == 0) {
-            void do_cache_flush();
-        }
-
-        else {
-            printf("Operation: %c, Address: 0x%lx, Value: 0x%lx\n", operation, address, value);
-            fprintf(stderr, "Error: Invalid operation code or arguments.\n");
-            exit(1);
-        }
-    }
-    fclose(file);
+    // simulation
+    process_dinero_trace(argv[1]);
 
     printf("Simulation Complete.\n\n");
 
@@ -180,6 +137,60 @@ void print_stats() {
     printf("L1: %f, L2: %f, DRAM: %f\n\n", l1_energy, l2_energy, dram_energy);
 
     printf("Total energy access time: %lu\n", total_mem_acces_time);
+}
+
+/**
+ * Process File
+*/
+void process_dinero_trace(const char* filename) {
+    // Process trace file
+    FILE* file = fopen(filename, "r");
+    if (file == NULL) {
+        fprintf(stderr, "Error: Unable to open trace file. Is it in Dinero 3 .din format?\n");
+        exit(1);
+    }
+
+    // TODO fix Dinero 3 input file processing
+    char operation;
+    int opcode;
+    unsigned long int address, value;
+
+    printf("Running simulation ...\n(Not complete right now)\n\n");
+    while (fscanf(file, "%c %lx %lx\n", &operation, &address, &value) == 3) {
+        // TODO execute corresponding operation
+        //printf("Operation: %c, Address: 0x%lx, Value: 0x%lx\n", operation, address, value);
+        opcode = operation - '0';
+
+        // memory read
+        if (opcode == MEMORY_READ && value == 0) {
+            do_memory_read(address);
+        }
+        // memory write
+        else if (opcode == MEMORY_WRITE && value == 0) {
+            // what do we write to??
+            // just acces DRAM for time?
+            do_memory_write(address, &value);
+        }
+        // instruction fetch
+        else if (opcode == INSTR_FETCH) {
+            void do_instruction_fetch(unsigned long int address, unsigned long int value);
+        }
+        // ignore
+        else if (opcode == IGNORE && address == 0) {
+            void do_ignore();
+        }
+        // flush cache
+        else if (opcode == FLUSH_CACHE && address == 0) {
+            void do_cache_flush();
+        }
+
+        else {
+            printf("Operation: %c, Address: 0x%lx, Value: 0x%lx\n", operation, address, value);
+            fprintf(stderr, "Error: Invalid operation code or arguments.\n");
+            exit(1);
+        }
+    }
+    fclose(file);
 }
 
 /**
