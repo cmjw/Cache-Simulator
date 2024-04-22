@@ -224,7 +224,7 @@ void do_memory_read(unsigned long int address) {
 */
 void do_memory_write(unsigned long int address, unsigned long int* data) {
     // idk yet
-    write_l1_icache(address, data);
+    write_l1_dcache(address, data);
 }
 
 /**
@@ -262,6 +262,8 @@ unsigned long int* read_l1_icache(unsigned long int address) {
     }
     
     l1_active_energy();
+    l2_idle_energy();
+    dram_idle_energy();
 
     // Calculate cache index and tag from the address
     size_t index = (address / BLOCK_SIZE) % L1_INSTRUCTION_NUM_BLOCKS;
@@ -297,10 +299,34 @@ unsigned long int* read_l1_dcache(unsigned long int address) {
     }
 
     l1_active_energy();
+    l2_idle_energy();
+    dram_idle_energy();
 
     clock_nsec += 0.5;
 
-    // TODO
+    size_t index = (address / BLOCK_SIZE) % L1_DATA_NUM_BLOCKS;
+    int tag = address / (BLOCK_SIZE * L1_DATA_NUM_BLOCKS);
+
+    if (l1_data_cache[index].valid && l1_data_cache[index].tag == tag) {
+        // Cache hit
+        l1_dcache_hits++;
+        return l1_data_cache[index].data;
+    }
+
+    // Cache miss
+    l1_dcache_misses++;
+
+    // seg fault
+    long unsigned int* data = read_l2_cache(address);
+
+    // // Update L1 data cache with fetched data
+    // l1_data_cache[index].valid = 1;
+    // l1_data_cache[index].tag = tag;
+    // l1_data_cache[index].dirty = 0; // Assuming no write-back policy for simplicity
+    // memcpy(l1_data_cache[index].data, data, BLOCK_SIZE);
+
+    // // Return pointer to the data
+    // return l1_data_cache[index].data;
 
     return 0;
 }
@@ -312,6 +338,8 @@ unsigned long int* read_l2_cache(unsigned long int address) {
     //printf("Addy: %lx\n", address);
 
     l2_active_energy();
+    l1_idle_energy();
+    dram_idle_energy();
     
     // Calculate set index and tag from the address
     size_t setIndex = (address / BLOCK_SIZE) % NUM_SETS;
@@ -340,7 +368,7 @@ unsigned long int* read_l2_cache(unsigned long int address) {
     memcpy(l2_cache[setIndex][replacementIndex].data, data, BLOCK_SIZE);
 
     // will be null!!
-    return l2_cache[setIndex][replacementIndex].data;
+    return data;
 }
 
 /**
@@ -353,9 +381,22 @@ unsigned long int* access_dram(unsigned long int address) {
     }
 
     dram_active_energy();
+    l1_idle_energy();
+    l2_idle_energy();
+
+    int* dummy_data = (int*) malloc(BLOCK_SIZE);
+    if (!dummy_data) {
+        fprintf(stderr, "Malloc failed\n");
+        exit(1);
+    }
+
+    srand(time(NULL)); 
+    for (int i = 0; i < BLOCK_SIZE / sizeof(int); i++) {
+        dummy_data[i] = rand(); // Generate a random integer
+    }
 
     // ????
-    return NULL;
+    return dummy_data;
 }
 
 /**
@@ -367,6 +408,8 @@ void write_l1_icache(unsigned long int address, unsigned long int* data) {
     }
 
     l1_active_energy();
+    l2_idle_energy();
+    dram_idle_energy();
 
     // Calculate cache index and tag from the address
     size_t index = (address / BLOCK_SIZE) % L1_INSTRUCTION_NUM_BLOCKS;
@@ -384,6 +427,8 @@ void write_l1_icache(unsigned long int address, unsigned long int* data) {
 */
 void write_l1_dcache(unsigned long int address, unsigned long int* data) {
     l1_active_energy();
+    l2_idle_energy();
+    dram_idle_energy();
 
     // Calculate cache index and tag from the address
     size_t index = (address / BLOCK_SIZE) % L1_DATA_NUM_BLOCKS;
@@ -401,6 +446,8 @@ void write_l1_dcache(unsigned long int address, unsigned long int* data) {
 */
 void write_l2_cache(unsigned long int address, unsigned long int* data) {
     l2_active_energy();
+    l1_idle_energy();
+    dram_idle_energy();
 
     size_t setIndex = (address / BLOCK_SIZE) % NUM_SETS;
     int tag = address / (BLOCK_SIZE * NUM_SETS);
