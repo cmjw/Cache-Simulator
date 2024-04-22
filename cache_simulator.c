@@ -261,6 +261,8 @@ void do_ignore() {
     l1_idle_energy();
     l2_idle_energy();
     dram_idle_energy();
+
+    simulation_clock += ONE_CYCLE;
 }
 
 /**
@@ -318,10 +320,6 @@ unsigned long int* read_l1_icache(unsigned long int address) {
  * Read L1 Data Cache
 */
 unsigned long int* read_l1_dcache(unsigned long int address) {
-    if (DEBUG) {
-        printf("Addy: %lx\n", address);
-    }
-
     l1_active_energy();
     l2_idle_energy();
     dram_idle_energy();
@@ -346,21 +344,17 @@ unsigned long int* read_l1_dcache(unsigned long int address) {
     // Update L1 data cache with fetched data
     l1_data_cache[index].valid = 1;
     l1_data_cache[index].tag = tag;
-    l1_data_cache[index].dirty = 0; // Assuming no write-back policy for simplicity
+    l1_data_cache[index].dirty = 0; 
     memcpy(l1_data_cache[index].data, data, BLOCK_SIZE);
 
     // // Return pointer to the data
     return l1_data_cache[index].data;
-
-    return 0;
 }
 
 /**
  * Read L2 Cache
 */
 unsigned long int* read_l2_cache(unsigned long int address) {
-    //printf("Addy: %lx\n", address);
-
     l2_active_energy();
     l1_idle_energy();
     dram_idle_energy();
@@ -382,7 +376,6 @@ unsigned long int* read_l2_cache(unsigned long int address) {
 
     // Simulate data fetching from memory
     unsigned long int* data = access_dram(address);
-    // data is null because DRAM doesn't exist ...
 
     // Random replacement policy
     int replacementIndex = rand() % SET_ASSOCIATIVITY;
@@ -392,7 +385,6 @@ unsigned long int* read_l2_cache(unsigned long int address) {
     l2_cache[setIndex][replacementIndex].tag = tag;
     memcpy(l2_cache[setIndex][replacementIndex].data, data, BLOCK_SIZE);
 
-    // will be null!!
     return data;
 }
 
