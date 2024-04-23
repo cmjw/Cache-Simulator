@@ -32,7 +32,6 @@ unsigned long int total_mem_acces_time = 0;
 // clock
 double simulation_clock = 0;
 
-
 // function decls
 void print_title();
 void print_stats();
@@ -106,7 +105,6 @@ int main(int argc, char *argv[]) {
     init_caches();
     simulation_clock = 0.0;
 
-
     // print args
     printf("File: %s\n\n", argv[1]);
 
@@ -168,8 +166,9 @@ void print_stats() {
     printf("Energy Consumption:\n");
     printf("L1: %f, L2: %f, DRAM: %f\n\n", l1_energy, l2_energy, dram_energy);
 
+    double clock_in_seconds = (double)simulation_clock / 1000000000;
+    printf("Total memory access time: %f seconds\n", clock_in_seconds);
 
-    printf("Total memory access time: %f\n", simulation_clock);
 }
 
 
@@ -308,7 +307,6 @@ void do_ignore() {
     l2_idle_energy();
     dram_idle_energy();
 
-
     simulation_clock += ONE_CYCLE;
 }
 
@@ -350,12 +348,14 @@ unsigned long int* read_l1_icache(unsigned long int address) {
     // Cache hit
     if (l1_instruction_cache[index].valid && l1_instruction_cache[index].tag == tag) {
         l1_icache_hits++;
+        simulation_clock += L1_ACCESS_TIME;
         return l1_instruction_cache[index].data;
     }
 
 
     // cache miss
     l1_icache_misses++;
+    simulation_clock += L1_ACCESS_TIME;
 
 
     // Cache miss, access L2 cache to fetch data
@@ -381,9 +381,7 @@ unsigned long int* read_l1_dcache(unsigned long int address) {
     l2_idle_energy();
     dram_idle_energy();
 
-
     simulation_clock += L1_ACCESS_TIME;
-
 
     size_t index = (address / BLOCK_SIZE) % L1_DATA_NUM_BLOCKS;
     int tag = address / (BLOCK_SIZE * L1_DATA_NUM_BLOCKS);
@@ -392,12 +390,14 @@ unsigned long int* read_l1_dcache(unsigned long int address) {
     if (l1_data_cache[index].valid && l1_data_cache[index].tag == tag) {
         // Cache hit
         l1_dcache_hits++;
+        simulation_clock += L1_ACCESS_TIME;
         return l1_data_cache[index].data;
     }
 
 
     // Cache miss
     l1_dcache_misses++;
+    simulation_clock += L1_ACCESS_TIME;
 
 
     // seg fault
@@ -408,6 +408,7 @@ unsigned long int* read_l1_dcache(unsigned long int address) {
     l1_data_cache[index].valid = 1;
     l1_data_cache[index].tag = tag;
     l1_data_cache[index].dirty = 0;
+
     memcpy(l1_data_cache[index].data, data, BLOCK_SIZE);
 
 
@@ -433,9 +434,11 @@ unsigned long int* read_l2_cache(unsigned long int address) {
     for (size_t i = 0; i < SET_ASSOCIATIVITY; i++) {
         if (l2_cache[setIndex][i].valid && l2_cache[setIndex][i].tag == tag) {
             // Cache hit
+
             simulation_clock += L2_ACCESS_TIME;
             l2_hits++;
             return l2_cache[setIndex][i].data;
+
         }
     }
 
@@ -443,10 +446,10 @@ unsigned long int* read_l2_cache(unsigned long int address) {
     // cache miss
     l2_misses++;
 
+    simulation_clock += L2_ACCESS_TIME;
 
     // Simulate data fetching from memory
-    unsigned long int* data = read_dram(address);
-
+    unsigned long int* data = access_dram(address);
 
     // Random replacement policy
     int replacementIndex = rand() % SET_ASSOCIATIVITY;
@@ -456,7 +459,6 @@ unsigned long int* read_l2_cache(unsigned long int address) {
     l2_cache[setIndex][replacementIndex].valid = 1;
     l2_cache[setIndex][replacementIndex].tag = tag;
     memcpy(l2_cache[setIndex][replacementIndex].data, data, BLOCK_SIZE);
-
 
     return data;
 }
@@ -484,9 +486,7 @@ unsigned long int* read_dram(unsigned long int address) {
         dummy_data[i] = rand();
     }
 
-
     simulation_clock += DRAM_ACCESS_TIME;
-
 
     // ????
     return dummy_data;
@@ -506,6 +506,9 @@ void write_l1_icache(unsigned long int address, unsigned long int* data) {
     l2_idle_energy();
     dram_idle_energy();
 
+    // ed discussion project clarification:
+    // writes are 5ns because only writes to l1,l2 are synchronous, and mark dirty bits
+    simulation_clock += L2_ACCESS_TIME;
 
     // Calculate cache index and tag from the address
     size_t index = (address / BLOCK_SIZE) % L1_INSTRUCTION_NUM_BLOCKS;
@@ -528,7 +531,9 @@ void write_l1_dcache(unsigned long int address, unsigned long int* data) {
     l1_active_energy();
     l2_idle_energy();
     dram_idle_energy();
-
+  
+    // writes are 5ns because only writes to l1,l2 are synchronous, and mark dirty bits
+    simulation_clock += L2_ACCESS_TIME;
 
     // Calculate cache index and tag from the address
     size_t index = (address / BLOCK_SIZE) % L1_DATA_NUM_BLOCKS;
@@ -552,6 +557,7 @@ void write_l2_cache(unsigned long int address, unsigned long int* data) {
     l1_idle_energy();
     dram_idle_energy();
 
+    simulation_clock += L2_ACCESS_TIME;
 
     size_t setIndex = (address / BLOCK_SIZE) % NUM_SETS;
     int tag = address / (BLOCK_SIZE * NUM_SETS);
@@ -561,6 +567,7 @@ void write_l2_cache(unsigned long int address, unsigned long int* data) {
     for (size_t i = 0; i < SET_ASSOCIATIVITY; i++) {
         if (l2_cache[setIndex][i].valid && l2_cache[setIndex][i].tag == tag) {
             // cache hit
+            l2_hits++;
             memcpy(l2_cache[setIndex][i].data, data, BLOCK_SIZE);
             l2_cache[setIndex][i].dirty = 1;
 

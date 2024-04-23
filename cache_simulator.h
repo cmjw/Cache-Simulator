@@ -40,3 +40,11 @@ typedef struct {
 #define L1_IDLE_ENERGY 0.5
 #define L2_IDLE_ENERGY 0.8
 #define DRAM_IDLE_ENERGY 0.8
+
+// access times for each cache in nanoseconds
+#define ONE_CYCLE 0.5
+#define L1_ACCESS_TIME 0.5
+#define L2_ACCESS_TIME 5
+#define DRAM_ACCESS_TIME 50
+
+
