@@ -19,6 +19,7 @@ unsigned long int l2_misses = 0;
 unsigned long int l1_icache_hits = 0;
 unsigned long int l1_dcache_hits = 0;
 unsigned long int l2_hits = 0;
+unsigned long int dram_hits = 0;
 
 
 double l1i_energy = 0;
@@ -152,22 +153,35 @@ void print_stats() {
     printf("\nStatistics: \n");
 
 
-    printf("Misses:\n");
-    printf("L1 icache: %lu, L1 dcache: %lu, L2: %lu\n\n", l1_icache_misses, l1_dcache_misses,
-        l2_misses);
+    printf("Set Associativity: %lu\n\n", SET_ASSOCIATIVITY);
 
+    // printf("Energy Consumption:\n");
+    // printf("L1i: %f, L1d: %f, L2: %f, DRAM: %f\n\n", l1i_energy, l1d_energy, l2_energy, dram_energy);
 
-    printf("Hits:\n");
-    printf("L1 icache: %lu, L1 dcache: %lu, L2: %lu\n\n", l1_icache_hits, l1_dcache_hits,
-        l2_hits);
+    // total access time and energy
+    printf("Total Access Time and Energy:\n");
+    printf("Total Access Time      | Total Energy\n");
+    printf("-----------------------|---------------------\n");
+    printf("%-15.2f        | %f\n", simulation_clock, l1i_energy+l1d_energy+l2_energy+dram_energy);
+    printf("\n");
 
+    if (SET_ASSOCIATIVITY == 4) {
+        // L1 cache statistics
+        printf("L1 Cache Statistics:\n");
+        printf("Component | # Access    | # Misses    | Energy\n");
+        printf("----------|-------------|-------------|-----------\n");
+        printf("L1 icache | %-9lu   | %-9lu   | %-9.2f\n", l1_icache_hits, l1_icache_misses, l1i_energy);
+        printf("L1 dcache | %-9lu   | %-9lu   | %-9.2f\n", l1_dcache_hits, l1_dcache_misses, l1d_energy);
+        printf("DRAM      | %-9lu   |             | %-9.2f\n", dram_hits, dram_energy);
+        printf("\n");
+    }
 
-    printf("Energy Consumption:\n");
-    printf("L1i: %f, L1d: %f, L2: %f, DRAM: %f\n\n", l1i_energy, l1d_energy, l2_energy, dram_energy);
-
-    double clock_in_seconds = (double)simulation_clock / 1000000000;
-    printf("Total memory access time: %f seconds\n", clock_in_seconds);
-
+    // L2 cache statistics
+    printf("L2 Cache Statistics:\n");
+    printf("Component | # Access    | # Misses    | Energy\n");
+    printf("----------|-------------|-------------|-----------\n");
+    printf("L2        | %-9lu   | %-9lu   | %-9.2f\n", l2_hits, l2_misses, l2_energy);
+    printf("\n");
 }
 
 
@@ -482,6 +496,7 @@ unsigned long int* read_dram(unsigned long int address) {
         dummy_data[i] = rand();
     }
 
+    dram_hits++;
     simulation_clock += DRAM_ACCESS_TIME;
 
     return dummy_data;
