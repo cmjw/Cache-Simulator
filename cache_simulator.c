@@ -137,7 +137,8 @@ void print_stats() {
     printf("Energy Consumption:\n");
     printf("L1: %f, L2: %f, DRAM: %f\n\n", l1_energy, l2_energy, dram_energy);
 
-    printf("Total memory access time: %f\n", simulation_clock);
+    double clock_in_seconds = (double)simulation_clock / 1000000000;
+    printf("Total memory access time: %f seconds\n", clock_in_seconds);
 }
 
 /**
@@ -369,12 +370,14 @@ unsigned long int* read_l2_cache(unsigned long int address) {
     for (size_t i = 0; i < SET_ASSOCIATIVITY; i++) {
         if (l2_cache[setIndex][i].valid && l2_cache[setIndex][i].tag == tag) {
             // Cache hit
+            l2_hits++;
             simulation_clock += L2_ACCESS_TIME;
             return l2_cache[setIndex][i].data; 
         }
     }
 
     // cache miss
+    l2_misses++;
     simulation_clock += L2_ACCESS_TIME;
 
     // Simulate data fetching from memory
@@ -487,6 +490,7 @@ void write_l2_cache(unsigned long int address, unsigned long int* data) {
     for (size_t i = 0; i < SET_ASSOCIATIVITY; i++) {
         if (l2_cache[setIndex][i].valid && l2_cache[setIndex][i].tag == tag) {
             // cache hit
+            l2_hits++;
             memcpy(l2_cache[setIndex][i].data, data, BLOCK_SIZE);
             l2_cache[setIndex][i].dirty = 1; 
             return;
@@ -494,6 +498,7 @@ void write_l2_cache(unsigned long int address, unsigned long int* data) {
     }
 
     // cache miss
+    l2_misses++;
     int replacementIndex = rand() % SET_ASSOCIATIVITY;
 
     // Update the cache block
