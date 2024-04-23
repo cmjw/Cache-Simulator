@@ -29,6 +29,13 @@ double dram_energy = 0;
 
 unsigned char dram[DRAM_SIZE];
 
+double l1i_static_energy = 0;
+double l1d_static_energy = 0;
+double l2_static_energy = 0;
+double dram_static_energy = 0;
+
+
+
 unsigned long int total_mem_acces_time = 0;
 
 
@@ -161,26 +168,38 @@ void print_stats() {
 
     // total access time and energy
     printf("Total Access Time and Energy:\n");
-    printf("Total Access Time      | Total Energy\n");
-    printf("-----------------------|---------------------\n");
-    printf("%-15.2f        | %f\n", simulation_clock, l1i_energy+l1d_energy+l2_energy+dram_energy);
-    printf("\n");
+    printf("Total Access Time      | Total Dynamic Energy (W) | Total Static Energy (pJ) \n");
+    printf("-----------------------|--------------------------|-------------------------\n");
+    printf("%-15.2f        | %f           | %f\n", simulation_clock, l1i_energy+l1d_energy+l2_energy+dram_energy,
+        l1i_static_energy+l1d_static_energy+l2_static_energy+dram_static_energy);
+   printf("\n");
 
         // L1 cache statistics
     printf("L1 Cache Statistics:\n");
-    printf("Component | # Access    | # Misses    | Energy\n");
-    printf("----------|-------------|-------------|-----------\n");
-    printf("L1 icache | %-9lu   | %-9lu   | %-9.2f\n", l1_icache_hits, l1_icache_misses, l1i_energy);
-    printf("L1 dcache | %-9lu   | %-9lu   | %-9.2f\n", l1_dcache_hits, l1_dcache_misses, l1d_energy);
-    printf("DRAM      | %-9lu   |             | %-9.2f\n", dram_hits, dram_energy);
-    printf("\n");
+    printf("Component | # Access    | # Misses    | Dyn. Energy | Static Energy (pJ) \n");
+    printf("----------|-------------|-------------|-------------|---------------\n");
+    printf("L1 icache | %-9lu   | %-9lu   | %-9.2f   | %-9.2f\n",
+        l1_icache_hits, l1_icache_misses, l1i_energy, l1i_static_energy);
+    printf("L1 dcache | %-9lu   | %-9lu   | %-9.2f   | %-9.2f\n",
+        l1_dcache_hits, l1_dcache_misses, l1d_energy, l1d_static_energy);
+   printf("\n");
 
     // L2 cache statistics
     printf("L2 Cache Statistics:\n");
-    printf("Component | # Access    | # Misses    | Energy\n");
-    printf("----------|-------------|-------------|-----------\n");
-    printf("L2        | %-9lu   | %-9lu   | %-9.2f\n", l2_hits, l2_misses, l2_energy);
+    printf("Component | # Access    | # Misses    | Dyn. Energy | Static Energy (pJ) \n");
+    printf("----------|-------------|-------------|-------------|---------------\n");
+    printf("L2        | %-9lu   | %-9lu   | %-9.2f  | %-9.2f\n",
+        l2_hits, l2_misses, l2_energy, l2_static_energy);
     printf("\n");
+
+
+    // DRAM stats
+    printf("DRAM Statistics:\n");
+    printf("Component | # Access    | # Misses    | Dyn. Energy | Static Energy (pJ) \n");
+    printf("----------|-------------|-------------|-------------|---------------\n");
+    printf("DRAM      | %-9lu   | N/A         | %-9.2f   | %-9.2f\n",
+        dram_hits, dram_energy, dram_static_energy);
+   printf("\n");
 }
 
 
@@ -195,13 +214,11 @@ void process_dinero_trace(const char* filename) {
         exit(1);
     }
 
-
     char operation;
     int opcode;
     unsigned long int address, value;
 
-
-    printf("Running simulation ...\n(Not complete right now)\n\n");
+    printf("Running simulation ...\n");
 
 
     while (fscanf(file, "%c %lx %lx\n", &operation, &address, &value) == 3) {
@@ -367,6 +384,7 @@ unsigned long int* read_l1_icache(unsigned long int address) {
 
     // cache miss
     l1_icache_misses++;
+    l1i_static_energy += 5;
     simulation_clock += L1_ACCESS_TIME;
 
 
@@ -454,6 +472,7 @@ unsigned long int* read_l2_cache(unsigned long int address) {
 
     // cache miss
     l2_misses++;
+    l2_static_energy += 640;
     simulation_clock += L2_ACCESS_TIME;
 
     // Simulate data fetching from memory
