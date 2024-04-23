@@ -165,7 +165,7 @@ void print_stats() {
     printf("%-15.2f        | %f\n", simulation_clock, l1i_energy+l1d_energy+l2_energy+dram_energy);
     printf("\n");
 
-    if (SET_ASSOCIATIVITY == 4) {
+    // if (SET_ASSOCIATIVITY == 4) {
         // L1 cache statistics
         printf("L1 Cache Statistics:\n");
         printf("Component | # Access    | # Misses    | Energy\n");
@@ -174,7 +174,7 @@ void print_stats() {
         printf("L1 dcache | %-9lu   | %-9lu   | %-9.2f\n", l1_dcache_hits, l1_dcache_misses, l1d_energy);
         printf("DRAM      | %-9lu   |             | %-9.2f\n", dram_hits, dram_energy);
         printf("\n");
-    }
+    // }
 
     // L2 cache statistics
     printf("L2 Cache Statistics:\n");
