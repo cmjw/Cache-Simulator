@@ -36,10 +36,12 @@ void process_dinero_trace(const char* filename);
 unsigned long int* read_l1_icache(unsigned long int address);
 unsigned long int* read_l1_dcache(unsigned long int address);
 unsigned long int* read_l2_cache(unsigned long int address);
+unsigned long int* read_dram(unsigned long int address);
+
 void write_l1_icache(unsigned long int address, unsigned long int* data);
 void write_l1_dcache(unsigned long int address, unsigned long int* data);
 void write_l2_cache(unsigned long int address, unsigned long int* data);
-unsigned long int* access_dram(unsigned long int address);
+void write_dram(unsigned long int address, unsigned long int* data);
 
 // op codes
 void do_memory_read(unsigned long int address);
@@ -368,14 +370,16 @@ unsigned long int* read_l2_cache(unsigned long int address) {
         if (l2_cache[setIndex][i].valid && l2_cache[setIndex][i].tag == tag) {
             // Cache hit
             simulation_clock += L2_ACCESS_TIME;
+            l2_hits++;
             return l2_cache[setIndex][i].data; 
         }
     }
 
     // cache miss
+    l2_misses++;
 
     // Simulate data fetching from memory
-    unsigned long int* data = access_dram(address);
+    unsigned long int* data = read_dram(address);
 
     // Random replacement policy
     int replacementIndex = rand() % SET_ASSOCIATIVITY;
@@ -392,11 +396,7 @@ unsigned long int* read_l2_cache(unsigned long int address) {
  * Access DRAM
  * Simulate only time and energy
 */
-unsigned long int* access_dram(unsigned long int address) {
-    if (DEBUG) {
-        printf("Addy: %lx\n", address);
-    }
-
+unsigned long int* read_dram(unsigned long int address) {
     dram_active_energy();
     l1_idle_energy();
     l2_idle_energy();
@@ -409,7 +409,7 @@ unsigned long int* access_dram(unsigned long int address) {
 
     srand(time(NULL)); 
     for (size_t i = 0; i < BLOCK_SIZE / sizeof(int); i++) {
-        dummy_data[i] = rand(); // Generate a random integer
+        dummy_data[i] = rand();
     }
 
     simulation_clock += DRAM_ACCESS_TIME;
@@ -477,18 +477,35 @@ void write_l2_cache(unsigned long int address, unsigned long int* data) {
             // cache hit
             memcpy(l2_cache[setIndex][i].data, data, BLOCK_SIZE);
             l2_cache[setIndex][i].dirty = 1; 
+
+            // hit, dont write back
+            l2_hits++;
+
             return;
         }
     }
 
     // cache miss
+    l2_misses++;
     int replacementIndex = rand() % SET_ASSOCIATIVITY;
+
+    if (l2_cache[setIndex][replacementIndex].dirty) {
+        // if evicting block, "write" it back to DRAM
+        write_dram(address, l2_cache[setIndex][replacementIndex].data);
+    }
 
     // Update the cache block
     l2_cache[setIndex][replacementIndex].valid = 1;
     l2_cache[setIndex][replacementIndex].tag = tag;
     l2_cache[setIndex][replacementIndex].dirty = 1;
     memcpy(l2_cache[setIndex][replacementIndex].data, data, BLOCK_SIZE);
+}
+
+/**
+ * "Write" to DRAM
+*/
+void write_dram(unsigned long int address, unsigned long int* data) {
+
 }
 
 /**
