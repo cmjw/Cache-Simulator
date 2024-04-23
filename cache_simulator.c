@@ -155,8 +155,8 @@ void print_stats() {
 
         // L1 cache statistics
     printf("L1 Cache Statistics:\n");
-    printf("Component | # Access    | # Misses    | Dyn. Energy | Static Energy (pJ) \n");
-    printf("----------|-------------|-------------|-------------|---------------\n");
+    printf("Component | # Hits      | # Misses    | Dynamic Energy (W) | Static Energy (pJ) \n");
+    printf("----------|-------------|-------------|--------------------|-------------------\n");
     printf("L1 icache | %-9lu   | %-9lu   | %-9.2f   | %-9.2f\n",
         l1_icache_hits, l1_icache_misses, l1i_energy, l1i_static_energy);
     printf("L1 dcache | %-9lu   | %-9lu   | %-9.2f   | %-9.2f\n",
@@ -165,16 +165,16 @@ void print_stats() {
 
     // L2 cache statistics
     printf("L2 Cache Statistics:\n");
-    printf("Component | # Access    | # Misses    | Dyn. Energy | Static Energy (pJ) \n");
-    printf("----------|-------------|-------------|-------------|---------------\n");
+    printf("Component | # Hits      | # Misses    | Dynamic Energy (W) | Static Energy (pJ) \n");
+    printf("----------|-------------|-------------|--------------------|-------------------\n");
     printf("L2        | %-9lu   | %-9lu   | %-9.2f  | %-9.2f\n",
         l2_hits, l2_misses, l2_energy, l2_static_energy);
     printf("\n");
 
     // DRAM stats
     printf("DRAM Statistics:\n");
-    printf("Component | # Access    | # Misses    | Dyn. Energy | Static Energy (pJ) \n");
-    printf("----------|-------------|-------------|-------------|---------------\n");
+    printf("Component | # Hits      | # Misses    | Dynamic Energy (W) | Static Energy (pJ) \n");
+    printf("----------|-------------|-------------|--------------------|-------------------\n");
     printf("DRAM      | %-9lu   | N/A         | %-9.2f   | %-9.2f\n",
         dram_hits, dram_energy, dram_static_energy);
    printf("\n");
