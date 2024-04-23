@@ -383,17 +383,14 @@ unsigned long int* read_l1_dcache(unsigned long int address) {
     size_t index = (address / BLOCK_SIZE) % L1_DATA_NUM_BLOCKS;
     int tag = address / (BLOCK_SIZE * L1_DATA_NUM_BLOCKS);
 
-
     if (l1_data_cache[index].valid && l1_data_cache[index].tag == tag) {
         // Cache hit
         l1_dcache_hits++;
-        simulation_clock += L1_ACCESS_TIME;
         return l1_data_cache[index].data;
     }
 
     // Cache miss
     l1_dcache_misses++;
-    simulation_clock += L1_ACCESS_TIME;
 
     // seg fault
     long unsigned int* data = read_l2_cache(address);
@@ -418,6 +415,8 @@ unsigned long int* read_l2_cache(unsigned long int address) {
     l1i_idle_energy();
     l1d_idle_energy();
     dram_idle_energy();
+
+    simulation_clock += L2_ACCESS_TIME;
    
     // Calculate set index and tag from the address
     size_t setIndex = (address / BLOCK_SIZE) % NUM_SETS;
@@ -427,7 +426,6 @@ unsigned long int* read_l2_cache(unsigned long int address) {
     for (size_t i = 0; i < SET_ASSOCIATIVITY; i++) {
         if (l2_cache[setIndex][i].valid && l2_cache[setIndex][i].tag == tag) {
             // Cache hit
-            simulation_clock += L2_ACCESS_TIME;
             l2_hits++;
 
             return l2_cache[setIndex][i].data;
@@ -437,7 +435,6 @@ unsigned long int* read_l2_cache(unsigned long int address) {
     // cache miss
     l2_misses++;
     dram_static_energy += 640;
-    simulation_clock += L2_ACCESS_TIME;
 
     // Simulate data fetching from memory
     unsigned long int* data = read_dram(address);
@@ -567,10 +564,8 @@ void write_l2_cache(unsigned long int address, unsigned long int* data) {
             memcpy(l2_cache[setIndex][i].data, data, BLOCK_SIZE);
             l2_cache[setIndex][i].dirty = 1;
 
-
             // hit, dont write back
             l2_hits++;
-
             return;
         }
     }
