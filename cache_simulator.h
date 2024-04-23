@@ -44,7 +44,8 @@ typedef struct {
 // access times in nanoseconds
 #define ONE_CYCLE 0.5
 #define L1_ACCESS_TIME 0.5
-#define L2_ACCESS_TIME 5
-#define DRAM_ACCESS_TIME 50
+#define L2_ACCESS_TIME 4.5
+#define DRAM_ACCESS_TIME 45
+#define WRITE_TIME 5
 
 #define DRAM_SIZE (1 * 1024 * 1024 * 1024)  // 1GB

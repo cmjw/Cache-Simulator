@@ -323,7 +323,7 @@ void do_ignore() {
 */
 void do_cache_flush() {
     init_caches();
-    do_ignore(); // ??
+    do_ignore(); 
 }
 
 
@@ -474,7 +474,7 @@ unsigned long int* read_dram(unsigned long int address) {
     }
 
     dram_hits++;
-    simulation_clock += DRAM_ACCESS_TIME;
+    simulation_clock += DRAM_ACCESS_TIME; // incurred time should be 50ns
 
     return dummy_data;
 }
@@ -491,7 +491,7 @@ void write_l1_icache(unsigned long int address, unsigned long int* data) {
 
     // ed discussion project clarification:
     // writes are 5ns because only writes to l1,l2 are synchronous
-    simulation_clock += L2_ACCESS_TIME;
+    simulation_clock += WRITE_TIME;
 
     // Calculate cache index and tag from the address
     size_t index = (address / BLOCK_SIZE) % L1_INSTRUCTION_NUM_BLOCKS;
@@ -515,7 +515,7 @@ void write_l1_dcache(unsigned long int address, unsigned long int* data) {
     dram_idle_energy();
   
     // writes are 5ns because only writes to l1,l2 are synchronous
-    simulation_clock += L2_ACCESS_TIME;
+    simulation_clock += L1_ACCESS_TIME;
 
     // Calculate cache index and tag from the address
     size_t index = (address / BLOCK_SIZE) % L1_DATA_NUM_BLOCKS;
@@ -532,6 +532,7 @@ void write_l1_dcache(unsigned long int address, unsigned long int* data) {
         }
     } else {
         l1_dcache_misses++;
+        simulation_clock += L2_ACCESS_TIME; // l1 miss, l2 miss: 5ns 
     }
 
     l1_data_cache[index].valid = 1;
@@ -551,7 +552,7 @@ void write_l2_cache(unsigned long int address, unsigned long int* data) {
     l1d_idle_energy();
     dram_idle_energy();
 
-    simulation_clock += L2_ACCESS_TIME;
+    simulation_clock += L2_ACCESS_TIME; // incurred time should be 5ns
 
     size_t setIndex = (address / BLOCK_SIZE) % NUM_SETS;
     int tag = address / (BLOCK_SIZE * NUM_SETS);
@@ -599,8 +600,8 @@ void write_dram(unsigned long int address, unsigned long int* data) {
     // using a dummy write
     memcpy(dram + address, data, BLOCK_SIZE);
 
-    dram_hits++; //? not sure
-    simulation_clock += DRAM_ACCESS_TIME; // Update simulation clock
+    dram_hits++; 
+    // no time incurred for dram write
 }
 
 /**
