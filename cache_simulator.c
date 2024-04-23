@@ -27,6 +27,7 @@ double l1d_energy = 0;
 double l2_energy = 0;
 double dram_energy = 0;
 
+unsigned char dram[DRAM_SIZE];
 
 unsigned long int total_mem_acces_time = 0;
 
@@ -165,16 +166,14 @@ void print_stats() {
     printf("%-15.2f        | %f\n", simulation_clock, l1i_energy+l1d_energy+l2_energy+dram_energy);
     printf("\n");
 
-    // if (SET_ASSOCIATIVITY == 4) {
         // L1 cache statistics
-        printf("L1 Cache Statistics:\n");
-        printf("Component | # Access    | # Misses    | Energy\n");
-        printf("----------|-------------|-------------|-----------\n");
-        printf("L1 icache | %-9lu   | %-9lu   | %-9.2f\n", l1_icache_hits, l1_icache_misses, l1i_energy);
-        printf("L1 dcache | %-9lu   | %-9lu   | %-9.2f\n", l1_dcache_hits, l1_dcache_misses, l1d_energy);
-        printf("DRAM      | %-9lu   |             | %-9.2f\n", dram_hits, dram_energy);
-        printf("\n");
-    // }
+    printf("L1 Cache Statistics:\n");
+    printf("Component | # Access    | # Misses    | Energy\n");
+    printf("----------|-------------|-------------|-----------\n");
+    printf("L1 icache | %-9lu   | %-9lu   | %-9.2f\n", l1_icache_hits, l1_icache_misses, l1i_energy);
+    printf("L1 dcache | %-9lu   | %-9lu   | %-9.2f\n", l1_dcache_hits, l1_dcache_misses, l1d_energy);
+    printf("DRAM      | %-9lu   |             | %-9.2f\n", dram_hits, dram_energy);
+    printf("\n");
 
     // L2 cache statistics
     printf("L2 Cache Statistics:\n");
@@ -513,7 +512,7 @@ void write_l1_icache(unsigned long int address, unsigned long int* data) {
     dram_idle_energy();
 
     // ed discussion project clarification:
-    // writes are 5ns because only writes to l1,l2 are synchronous, and mark dirty bits
+    // writes are 5ns because only writes to l1,l2 are synchronous
     simulation_clock += L2_ACCESS_TIME;
 
     // Calculate cache index and tag from the address
@@ -537,7 +536,7 @@ void write_l1_dcache(unsigned long int address, unsigned long int* data) {
     l2_idle_energy();
     dram_idle_energy();
   
-    // writes are 5ns because only writes to l1,l2 are synchronous, and mark dirty bits
+    // writes are 5ns because only writes to l1,l2 are synchronous
     simulation_clock += L2_ACCESS_TIME;
 
     // Calculate cache index and tag from the address
@@ -619,7 +618,16 @@ void write_l2_cache(unsigned long int address, unsigned long int* data) {
  * "Write" to DRAM
 */
 void write_dram(unsigned long int address, unsigned long int* data) {  
-    
+    dram_active_energy();
+    l1i_idle_energy();
+    l1d_idle_energy();
+    l2_idle_energy();
+
+    // using a dummy write
+    memcpy(dram + address, data, BLOCK_SIZE);
+
+    dram_hits++; //? not sure
+    simulation_clock += DRAM_ACCESS_TIME; // Update simulation clock
 }
 
 /**
