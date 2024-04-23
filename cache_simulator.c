@@ -9,18 +9,15 @@ CacheBlock l2_cache             [NUM_SETS][DEFAULT_ASSOCIATIVITY];
 
 unsigned long int SET_ASSOCIATIVITY = -1;
 
-
 // stats
 unsigned long int l1_icache_misses = 0;
 unsigned long int l1_dcache_misses = 0;
 unsigned long int l2_misses = 0;
 
-
 unsigned long int l1_icache_hits = 0;
 unsigned long int l1_dcache_hits = 0;
 unsigned long int l2_hits = 0;
 unsigned long int dram_hits = 0;
-
 
 double l1i_energy = 0;
 double l1d_energy = 0;
@@ -34,10 +31,7 @@ double l1d_static_energy = 0;
 double l2_static_energy = 0;
 double dram_static_energy = 0;
 
-
-
 unsigned long int total_mem_acces_time = 0;
-
 
 // clock
 double simulation_clock = 0;
@@ -68,7 +62,6 @@ void do_instruction_fetch(unsigned long int address, unsigned long int value);
 void do_ignore();
 void do_cache_flush();
 
-
 // energy sim
 void l1i_idle_energy();
 void l1d_idle_energy();
@@ -81,7 +74,6 @@ void dram_active_energy();
 
 
 
-
 /**************************************
  * Main entry point
 ***************************************/
@@ -91,15 +83,12 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-
     if (argc == 2) {
         print_title();
     }
 
-
     // Initialize caches
     SET_ASSOCIATIVITY = DEFAULT_ASSOCIATIVITY;
-
 
     // set associativity
     if (argc > 3) {
@@ -111,23 +100,17 @@ int main(int argc, char *argv[]) {
         SET_ASSOCIATIVITY = associativity;
     }
 
-
     init_caches();
     simulation_clock = 0.0;
 
     // print args
     printf("File: %s\n\n", argv[1]);
 
-
     // simulation
     process_dinero_trace(argv[1]);
 
-    printf("Simulation Complete.\n\n");
-
-
     // stats
     print_stats();
-
 
     printf("==========================\n");
 
@@ -160,11 +143,7 @@ void print_title() {
 void print_stats() {
     printf("\nStatistics: \n");
 
-
     printf("Set Associativity: %lu\n\n", SET_ASSOCIATIVITY);
-
-    // printf("Energy Consumption:\n");
-    // printf("L1i: %f, L1d: %f, L2: %f, DRAM: %f\n\n", l1i_energy, l1d_energy, l2_energy, dram_energy);
 
     // total access time and energy
     printf("Total Access Time and Energy:\n");
@@ -192,7 +171,6 @@ void print_stats() {
         l2_hits, l2_misses, l2_energy, l2_static_energy);
     printf("\n");
 
-
     // DRAM stats
     printf("DRAM Statistics:\n");
     printf("Component | # Access    | # Misses    | Dyn. Energy | Static Energy (pJ) \n");
@@ -219,7 +197,6 @@ void process_dinero_trace(const char* filename) {
     unsigned long int address, value;
 
     printf("Running simulation ...\n");
-
 
     while (fscanf(file, "%c %lx %lx\n", &operation, &address, &value) == 3) {
         opcode = operation - '0';
@@ -254,6 +231,7 @@ void process_dinero_trace(const char* filename) {
         }
     }
     fclose(file);
+    printf("Simulation Complete.\n\n");
 }
 
 
@@ -271,7 +249,7 @@ void init_caches() {
         }
     }
 
-
+    // L1 dcache
     for (size_t i = 0; i < L1_DATA_NUM_BLOCKS; i++) {
         l1_data_cache[i].valid = 0;
         l1_data_cache[i].dirty = 0;
@@ -281,7 +259,7 @@ void init_caches() {
         }
     }
 
-
+    // L2 cache
     for (size_t i = 0; i < NUM_SETS; i++) {
         for (size_t j = 0; j < SET_ASSOCIATIVITY; j++) {
             l2_cache[i][j].valid = 0;
@@ -312,7 +290,6 @@ void do_memory_read(unsigned long int address) {
  * Do a memory write.
 */
 void do_memory_write(unsigned long int address, unsigned long int* data) {
-    // idk yet
     write_l1_dcache(address, data);
 }
 
@@ -359,20 +336,14 @@ void do_cache_flush() {
  * Read L1 Instruction Cache
 */
 unsigned long int* read_l1_icache(unsigned long int address) {
-    if (DEBUG) {
-        printf("Addy: %lx\n", address);
-    }
-   
     l1i_active_energy();
     l1d_idle_energy();
     l2_idle_energy();
     dram_idle_energy();
 
-
     // Calculate cache index and tag from the address
     size_t index = (address / BLOCK_SIZE) % L1_INSTRUCTION_NUM_BLOCKS;
     int tag = address / (BLOCK_SIZE * L1_INSTRUCTION_NUM_BLOCKS);
-
 
     // Cache hit
     if (l1_instruction_cache[index].valid && l1_instruction_cache[index].tag == tag) {
@@ -381,24 +352,19 @@ unsigned long int* read_l1_icache(unsigned long int address) {
         return l1_instruction_cache[index].data;
     }
 
-
     // cache miss
     l1_icache_misses++;
-    l1i_static_energy += 5;
+    l2_static_energy += 5;
     simulation_clock += L1_ACCESS_TIME;
-
 
     // Cache miss, access L2 cache to fetch data
     unsigned long int* data = read_l2_cache(address);
-
 
     // Update L1 instruction cache with fetched data
     l1_instruction_cache[index].valid = 1;
     l1_instruction_cache[index].tag = tag;
     memcpy(l1_instruction_cache[index].data, data, BLOCK_SIZE);
 
-
-    // Return the fetched data
     return data;
 }
 
@@ -424,7 +390,6 @@ unsigned long int* read_l1_dcache(unsigned long int address) {
         simulation_clock += L1_ACCESS_TIME;
         return l1_data_cache[index].data;
     }
-
 
     // Cache miss
     l1_dcache_misses++;
@@ -458,7 +423,6 @@ unsigned long int* read_l2_cache(unsigned long int address) {
     size_t setIndex = (address / BLOCK_SIZE) % NUM_SETS;
     int tag = address / (BLOCK_SIZE * NUM_SETS);
 
-
     // find block in the set
     for (size_t i = 0; i < SET_ASSOCIATIVITY; i++) {
         if (l2_cache[setIndex][i].valid && l2_cache[setIndex][i].tag == tag) {
@@ -472,7 +436,7 @@ unsigned long int* read_l2_cache(unsigned long int address) {
 
     // cache miss
     l2_misses++;
-    l2_static_energy += 640;
+    dram_static_energy += 640;
     simulation_clock += L2_ACCESS_TIME;
 
     // Simulate data fetching from memory
@@ -501,13 +465,11 @@ unsigned long int* read_dram(unsigned long int address) {
     l1d_idle_energy();
     l2_idle_energy();
 
-
     int* dummy_data = (int*) malloc(BLOCK_SIZE);
     if (!dummy_data) {
         fprintf(stderr, "Malloc failed\n");
         exit(1);
     }
-
 
     srand(time(NULL));
     for (size_t i = 0; i < BLOCK_SIZE / sizeof(int); i++) {
@@ -579,7 +541,6 @@ void write_l1_dcache(unsigned long int address, unsigned long int* data) {
     l1_data_cache[index].tag = tag;
     l1_data_cache[index].dirty = 1;
 
-
     memcpy(l1_data_cache[index].data, data, BLOCK_SIZE);
 }
 
@@ -598,7 +559,6 @@ void write_l2_cache(unsigned long int address, unsigned long int* data) {
     size_t setIndex = (address / BLOCK_SIZE) % NUM_SETS;
     int tag = address / (BLOCK_SIZE * NUM_SETS);
 
-
     // Check if block is already present
     for (size_t i = 0; i < SET_ASSOCIATIVITY; i++) {
         if (l2_cache[setIndex][i].valid && l2_cache[setIndex][i].tag == tag) {
@@ -614,7 +574,6 @@ void write_l2_cache(unsigned long int address, unsigned long int* data) {
             return;
         }
     }
-
 
     // cache miss
     l2_misses++;
@@ -721,7 +680,6 @@ void process_trace_file(const char* filename) {
         exit(1);
     }
 
-
     char operation;
     unsigned long int address;
 
@@ -730,7 +688,6 @@ void process_trace_file(const char* filename) {
         // ex
         printf("Operation: %c, Address: 0x%lx\n", operation, address);
     }
-
 
     fclose(file);
 }
