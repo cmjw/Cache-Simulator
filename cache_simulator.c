@@ -21,7 +21,8 @@ unsigned long int l1_dcache_hits = 0;
 unsigned long int l2_hits = 0;
 
 
-double l1_energy = 0;
+double l1i_energy = 0;
+double l1d_energy = 0;
 double l2_energy = 0;
 double dram_energy = 0;
 
@@ -60,10 +61,12 @@ void do_cache_flush();
 
 
 // energy sim
-void l1_idle_energy();
+void l1i_idle_energy();
+void l1d_idle_energy();
 void l2_idle_energy();
 void dram_idle_energy();
-void l1_active_energy();
+void l1i_active_energy();
+void l1d_active_energy();
 void l2_active_energy();
 void dram_active_energy();
 
@@ -110,7 +113,6 @@ int main(int argc, char *argv[]) {
     // simulation
     process_dinero_trace(argv[1]);
 
-
     printf("Simulation Complete.\n\n");
 
 
@@ -120,6 +122,7 @@ int main(int argc, char *argv[]) {
 
     printf("==========================\n");
 
+    free_caches();
 
     return 0;
 }
@@ -162,7 +165,7 @@ void print_stats() {
 
 
     printf("Energy Consumption:\n");
-    printf("L1: %f, L2: %f, DRAM: %f\n\n", l1_energy, l2_energy, dram_energy);
+    printf("L1i: %f, L1d: %f, L2: %f, DRAM: %f\n\n", l1i_energy, l1d_energy, l2_energy, dram_energy);
 
     double clock_in_seconds = (double)simulation_clock / 1000000000;
     printf("Total memory access time: %f seconds\n", clock_in_seconds);
@@ -263,8 +266,12 @@ void init_caches() {
     }
 }
 
-
-
+/**
+ * Free cache memory
+*/
+void free_caches() {
+    
+}
 
 /** +++++++++++++++++++++++++++++++++++++++++++
  * Operation wrapper functions
@@ -301,7 +308,8 @@ void do_instruction_fetch(unsigned long int address, unsigned long int value) {
 */
 void do_ignore() {
     // idle energy consumption
-    l1_idle_energy();
+    l1i_idle_energy();
+    l1d_idle_energy();
     l2_idle_energy();
     dram_idle_energy();
 
@@ -333,7 +341,8 @@ unsigned long int* read_l1_icache(unsigned long int address) {
         printf("Addy: %lx\n", address);
     }
    
-    l1_active_energy();
+    l1i_active_energy();
+    l1d_idle_energy();
     l2_idle_energy();
     dram_idle_energy();
 
@@ -375,7 +384,8 @@ unsigned long int* read_l1_icache(unsigned long int address) {
  * Read L1 Data Cache
 */
 unsigned long int* read_l1_dcache(unsigned long int address) {
-    l1_active_energy();
+    l1d_active_energy();
+    l1i_idle_energy();
     l2_idle_energy();
     dram_idle_energy();
 
@@ -397,10 +407,8 @@ unsigned long int* read_l1_dcache(unsigned long int address) {
     l1_dcache_misses++;
     simulation_clock += L1_ACCESS_TIME;
 
-
     // seg fault
     long unsigned int* data = read_l2_cache(address);
-
 
     // Update L1 data cache with fetched data
     l1_data_cache[index].valid = 1;
@@ -409,8 +417,7 @@ unsigned long int* read_l1_dcache(unsigned long int address) {
 
     memcpy(l1_data_cache[index].data, data, BLOCK_SIZE);
 
-
-    // // Return pointer to the data
+    // Return pointer to the data
     return l1_data_cache[index].data;
 }
 
@@ -420,7 +427,8 @@ unsigned long int* read_l1_dcache(unsigned long int address) {
 */
 unsigned long int* read_l2_cache(unsigned long int address) {
     l2_active_energy();
-    l1_idle_energy();
+    l1i_idle_energy();
+    l1d_idle_energy();
     dram_idle_energy();
    
     // Calculate set index and tag from the address
@@ -432,18 +440,15 @@ unsigned long int* read_l2_cache(unsigned long int address) {
     for (size_t i = 0; i < SET_ASSOCIATIVITY; i++) {
         if (l2_cache[setIndex][i].valid && l2_cache[setIndex][i].tag == tag) {
             // Cache hit
-
             simulation_clock += L2_ACCESS_TIME;
             l2_hits++;
-            return l2_cache[setIndex][i].data;
 
+            return l2_cache[setIndex][i].data;
         }
     }
 
-
     // cache miss
     l2_misses++;
-
     simulation_clock += L2_ACCESS_TIME;
 
     // Simulate data fetching from memory
@@ -468,7 +473,8 @@ unsigned long int* read_l2_cache(unsigned long int address) {
 */
 unsigned long int* read_dram(unsigned long int address) {
     dram_active_energy();
-    l1_idle_energy();
+    l1i_idle_energy();
+    l1d_idle_energy();
     l2_idle_energy();
 
 
@@ -486,7 +492,6 @@ unsigned long int* read_dram(unsigned long int address) {
 
     simulation_clock += DRAM_ACCESS_TIME;
 
-    // ????
     return dummy_data;
 }
 
@@ -495,12 +500,8 @@ unsigned long int* read_dram(unsigned long int address) {
  * Write L1 Instruction Cache
 */
 void write_l1_icache(unsigned long int address, unsigned long int* data) {
-    if (DEBUG) {
-        printf("Addy: %lx\n", address);
-    }
-
-
-    l1_active_energy();
+    l1i_active_energy();
+    l1d_idle_energy();
     l2_idle_energy();
     dram_idle_energy();
 
@@ -512,11 +513,9 @@ void write_l1_icache(unsigned long int address, unsigned long int* data) {
     size_t index = (address / BLOCK_SIZE) % L1_INSTRUCTION_NUM_BLOCKS;
     int tag = address / (BLOCK_SIZE * L1_INSTRUCTION_NUM_BLOCKS);
 
-
     l1_data_cache[index].valid = 1;
     l1_data_cache[index].tag = tag;
     l1_data_cache[index].dirty = 1;
-
 
     memcpy(l1_instruction_cache[index].data, data, BLOCK_SIZE);
 }
@@ -526,7 +525,8 @@ void write_l1_icache(unsigned long int address, unsigned long int* data) {
  * Write to the L1 data cache
 */
 void write_l1_dcache(unsigned long int address, unsigned long int* data) {
-    l1_active_energy();
+    l1d_active_energy();
+    l1i_idle_energy();
     l2_idle_energy();
     dram_idle_energy();
   
@@ -552,7 +552,8 @@ void write_l1_dcache(unsigned long int address, unsigned long int* data) {
 */
 void write_l2_cache(unsigned long int address, unsigned long int* data) {
     l2_active_energy();
-    l1_idle_energy();
+    l1i_idle_energy();
+    l1d_idle_energy();
     dram_idle_energy();
 
     simulation_clock += L2_ACCESS_TIME;
@@ -598,16 +599,22 @@ void write_l2_cache(unsigned long int address, unsigned long int* data) {
 /**
  * "Write" to DRAM
 */
-void write_dram(unsigned long int address, unsigned long int* data) {
-
-
+void write_dram(unsigned long int address, unsigned long int* data) {  
+    
 }
 
 /**
- * Simulate idle L1 cache
+ * Simulate idle L1 icache
 */
-void l1_idle_energy() {
-    l1_energy += L1_IDLE_ENERGY;
+void l1i_idle_energy() {
+    l1i_energy += L1_IDLE_ENERGY;
+}
+
+/**
+ * Simulate idle L1 dcache
+*/
+void l1d_idle_energy() {
+    l1d_energy += L1_IDLE_ENERGY;
 }
 
 
@@ -628,10 +635,17 @@ void dram_idle_energy() {
 
 
 /**
- * Simulate energy consumption of L1 cache
+ * Simulate energy consumption of L1 icache
 */
-void l1_active_energy() {
-    l1_energy += L1_RW_ENERGY;
+void l1i_active_energy() {
+    l1i_energy += L1_RW_ENERGY;
+}
+
+/**
+ * Simulate energy consumption of L1 dcache
+*/
+void l1d_active_energy() {
+    l1d_energy += L1_RW_ENERGY;
 }
 
 
