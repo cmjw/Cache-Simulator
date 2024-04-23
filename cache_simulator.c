@@ -537,6 +537,18 @@ void write_l1_dcache(unsigned long int address, unsigned long int* data) {
     size_t index = (address / BLOCK_SIZE) % L1_DATA_NUM_BLOCKS;
     int tag = address / (BLOCK_SIZE * L1_DATA_NUM_BLOCKS);
 
+    // Check if the cache line is present
+    if (l1_data_cache[index].valid && l1_data_cache[index].tag == tag) {
+        l1_dcache_hits++;
+
+        // Check if the cache line is dirty
+        if (l1_data_cache[index].dirty) {
+            // Write back the modified data to L2 cache or DRAM
+            write_l2_cache(l1_data_cache[index].tag, l1_data_cache[index].data);
+        }
+    } else {
+        l1_dcache_misses++;
+    }
 
     l1_data_cache[index].valid = 1;
     l1_data_cache[index].tag = tag;
