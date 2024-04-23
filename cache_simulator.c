@@ -36,13 +36,12 @@ unsigned long int total_mem_acces_time = 0;
 // clock
 double simulation_clock = 0;
 
-// function decls
+// function declarations
 void print_title();
 void print_stats();
 void init_caches();
 void process_trace_file(const char* filename);
 void process_dinero_trace(const char* filename);
-
 
 // simulated accesses
 unsigned long int* read_l1_icache(unsigned long int address);
@@ -50,6 +49,7 @@ unsigned long int* read_l1_dcache(unsigned long int address);
 unsigned long int* read_l2_cache(unsigned long int address);
 unsigned long int* read_dram(unsigned long int address);
 
+// simulated writes
 void write_l1_icache(unsigned long int address, unsigned long int* data);
 void write_l1_dcache(unsigned long int address, unsigned long int* data);
 void write_l2_cache(unsigned long int address, unsigned long int* data);
@@ -100,8 +100,8 @@ int main(int argc, char *argv[]) {
         SET_ASSOCIATIVITY = associativity;
     }
 
-    init_caches();
     simulation_clock = 0.0;
+    init_caches();
 
     // print args
     printf("File: %s\n\n", argv[1]);

@@ -1,5 +1,4 @@
 #!/bin/bash
-
 ./cache_simulator ./traces/008.espresso.din -m -a 2
 ./cache_simulator ./traces/013.spice2g6.din -m -a 2
 ./cache_simulator ./traces/015.doduc.din -m -a 2 
@@ -12,10 +11,9 @@
 ./cache_simulator ./traces/048.ora.din -m -a 2
 ./cache_simulator ./traces/085.gcc.din -m -a 2
 ./cache_simulator ./traces/089.su2cor.din -m -a 2
-./cache_simulator ./traces/090.hydro2.din -m -a 2
+./cache_simulator ./traces/090.hydro2d.din -m -a 2
 ./cache_simulator ./traces/093.nasa7.din -m -a 2
 ./cache_simulator ./traces/094.fpppp.din -m -a 2
-
 ./cache_simulator ./traces/008.espresso.din -m -a 4
 ./cache_simulator ./traces/013.spice2g6.din -m -a 4
 ./cache_simulator ./traces/015.doduc.din -m -a 4
@@ -28,10 +26,9 @@
 ./cache_simulator ./traces/048.ora.din -m -a 4
 ./cache_simulator ./traces/085.gcc.din -m -a 4
 ./cache_simulator ./traces/089.su2cor.din -m -a 4
-./cache_simulator ./traces/090.hydro2.din -m -a 4
+./cache_simulator ./traces/090.hydro2d.din -m -a 4
 ./cache_simulator ./traces/093.nasa7.din -m -a 4
 ./cache_simulator ./traces/094.fpppp.din -m -a 4
-
 ./cache_simulator ./traces/008.espresso.din -m -a 8
 ./cache_simulator ./traces/013.spice2g6.din -m -a 8
 ./cache_simulator ./traces/015.doduc.din -m -a 8
@@ -44,6 +41,6 @@
 ./cache_simulator ./traces/048.ora.din -m -a 8
 ./cache_simulator ./traces/085.gcc.din -m -a 8
 ./cache_simulator ./traces/089.su2cor.din -m -a 8
-./cache_simulator ./traces/090.hydro2.din -m -a 8
+./cache_simulator ./traces/090.hydro2d.din -m -a 8
 ./cache_simulator ./traces/093.nasa7.din -m -a 8
 ./cache_simulator ./traces/094.fpppp.din -m -a 8
