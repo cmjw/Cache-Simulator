@@ -122,8 +122,6 @@ int main(int argc, char *argv[]) {
 
     printf("==========================\n");
 
-    free_caches();
-
     return 0;
 }
 
@@ -266,12 +264,6 @@ void init_caches() {
     }
 }
 
-/**
- * Free cache memory
-*/
-void free_caches() {
-    
-}
 
 /** +++++++++++++++++++++++++++++++++++++++++++
  * Operation wrapper functions
